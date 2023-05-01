@@ -1,14 +1,19 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { DecodedIdToken } from 'firebase-admin/auth';
 
 import { AuthError, AuthErrorConstants } from 'src/modules/auth';
-import { User, UsersRepository } from 'src/modules/user';
+import { UsersService } from 'src/modules/user';
 import { FirebaseService } from 'src/modules/firebase';
+import { UserDto } from 'src/dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userRepository: UsersRepository,
+    private readonly usersService: UsersService,
     private readonly firebaseService: FirebaseService,
   ) {}
 
@@ -23,17 +28,14 @@ export class AuthService {
     return token;
   };
 
-  public async validateUserInMongo({
-    uid,
-    email,
-  }: DecodedIdToken): Promise<User> {
-    let user = await this.userRepository.getUserByEmail(email);
+  public async validateUserInMongo({ uid }: DecodedIdToken): Promise<UserDto> {
+    let user = await this.usersService.getUserByUid(uid);
 
     if (!user) {
       const userInFirebase = await this.firebaseService.getUserByUid(uid);
 
       try {
-        const newUser = await this.userRepository.createUser({
+        const newUser = await this.usersService.createUser({
           email: userInFirebase.email,
           password: userInFirebase.passwordSalt,
           displayName: userInFirebase.displayName,
@@ -44,7 +46,9 @@ export class AuthService {
 
         user = newUser;
       } catch (error) {
-        throw new AuthError(error);
+        const err = new AuthError(error);
+        console.error(err);
+        throw new InternalServerErrorException();
       }
     }
 

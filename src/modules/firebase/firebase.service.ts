@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -10,6 +11,7 @@ import { DecodedIdToken, UserRecord } from 'firebase-admin/lib/auth';
 
 import { TConfigService, configuration } from 'src/config';
 import { FirebaseError } from './firebase.error';
+import { AuthErrorConstants } from '../auth';
 
 @Injectable()
 export class FirebaseService {
@@ -75,7 +77,9 @@ export class FirebaseService {
     try {
       return await this.admin.auth().verifyIdToken(token);
     } catch (error) {
-      this.errorException(error);
+      const err = new FirebaseError(error);
+      console.error(err);
+      throw new UnauthorizedException(AuthErrorConstants.TOKEN_EXPIRE);
     }
   }
 
