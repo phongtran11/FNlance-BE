@@ -1,7 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 
 import { FirebaseAuthGuard } from '../auth/firebase.guard';
-import { GetUserByUidDTO } from 'src/dto';
+import { GetUserByUidDTO } from 'src/common/dto';
 import { UsersService } from './user.service';
 
 @Controller('users')

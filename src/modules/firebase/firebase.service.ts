@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import firebaseAdmin from 'firebase-admin';
 import { DecodedIdToken, UserRecord } from 'firebase-admin/lib/auth';
 
-import { TConfigService, configuration } from 'src/config';
+import { TConfigService, configuration } from 'src/common/config';
 import { FirebaseError } from './firebase.error';
 import { AuthErrorConstants } from '../auth';
 

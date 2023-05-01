@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { UsersRepository } from './user.repository';
 import { plainToInstance } from 'class-transformer';
-import { UserDto } from 'src/dto';
+import { UserDto } from 'src/common/dto';
 
 @Injectable()
 export class UsersService {

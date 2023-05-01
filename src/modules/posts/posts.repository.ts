@@ -4,13 +4,18 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { Post } from './posts.schema';
-import { CreatePostDto, PostDto } from 'src/dto/posts';
-import { PaginateDto } from 'src/dto';
-import { TUserQueryByMongoose } from './types';
+import { CreatePostDto, PostDto } from 'src/common/dto/posts';
+import { PaginateDto } from 'src/common/dto';
+import { TPostQueryByMongoose } from './types';
 import { PostsError } from './posts.error';
+import {
+  countPostPipeline,
+  findAllPostPipeline,
+  findPostByIdPipeline,
+} from './posts.aggregate';
 
 @Injectable()
 export class PostsRepository {
@@ -25,7 +30,7 @@ export class PostsRepository {
     budgetFrom,
     budgetTo,
     expiredDay,
-  }: CreatePostDto): Promise<TUserQueryByMongoose> {
+  }: CreatePostDto): Promise<TPostQueryByMongoose> {
     try {
       const newPost = new this.postModel({
         userId,
@@ -44,26 +49,44 @@ export class PostsRepository {
     }
   }
 
-  async getList({ page, limit }: PaginateDto): Promise<TUserQueryByMongoose[]> {
+  async getList({ page, limit }: PaginateDto): Promise<PostDto[]> {
     try {
-      const list = await this.postModel.find({}, undefined, {
-        limit: 10,
-        skip: (page - 1) * limit,
-      });
+      const getListPostAggregate = findAllPostPipeline(page, limit);
+      const listPost = await this.postModel.aggregate<PostDto>(
+        getListPostAggregate,
+      );
 
-      return list;
+      return listPost;
     } catch (error) {
       this.errorException(error);
     }
   }
 
-  async countDocument(filter: Record<keyof PostDto, any> | object) {
-    return await this.postModel.count(filter);
+  async countDocument(filter?: { key: keyof PostDto; value: any }) {
+    const countAggregate = countPostPipeline(filter);
+
+    const countResult = await this.postModel.aggregate<{ count: number }>(
+      countAggregate,
+    );
+
+    return countResult[0].count;
   }
 
-  private errorException(error) {
-    const err = new PostsError(error);
-    Logger.error('PostRepository ' + new Date().toISOString() + err);
+  async getPostById(postId: Types.ObjectId): Promise<PostDto> {
+    try {
+      const findPostPipeline = findPostByIdPipeline(postId);
+      const postResult = await this.postModel.aggregate<PostDto>(
+        findPostPipeline,
+      );
+
+      return postResult[0];
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  private errorException(error: unknown) {
+    Logger.error(`PostRepository ${new Date().toISOString()} ${error}`);
     throw new InternalServerErrorException();
   }
 }

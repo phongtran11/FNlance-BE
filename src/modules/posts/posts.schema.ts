@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { EPostStatus } from 'src/enums';
+import { EPostStatus } from 'src/common/enums';
 
 export type PostDocument = Post & Document;
 

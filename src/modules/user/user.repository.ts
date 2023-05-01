@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-import { UserDto } from 'src/dto';
+import { UserDto } from 'src/common/dto';
 import { User } from './user.schema';
 import { UserError } from './user.error';
 import { TUserQueryByMongoose } from './types';

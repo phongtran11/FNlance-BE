@@ -2,9 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 
 import { PostsRepository } from './posts.repository';
-import { CreatePostDto, ListPostDto, PostDto } from 'src/dto/posts';
+import { CreatePostDto, ListPostDto, PostDto } from 'src/common/dto/posts';
 import { UsersRepository } from '../user';
-import { PaginateDto } from 'src/dto';
+import { PaginateDto } from 'src/common/dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class PostsService {
@@ -29,7 +30,7 @@ export class PostsService {
 
   async getList(paginateDto: PaginateDto): Promise<ListPostDto> {
     const list = await this.postsRepository.getList(paginateDto);
-    const totalPost = await this.postsRepository.countDocument({});
+    const totalPost = await this.postsRepository.countDocument();
     const totalPage =
       totalPost / paginateDto.limit < 1
         ? 1
@@ -42,5 +43,10 @@ export class PostsService {
       totalPost,
       totalPage,
     });
+  }
+
+  async getPostById(postId: Types.ObjectId): Promise<PostDto> {
+    const post = this.postsRepository.getPostById(postId);
+    return plainToInstance(PostDto, post);
   }
 }

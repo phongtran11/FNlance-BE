@@ -1,9 +1,8 @@
 import { Exclude, Expose } from 'class-transformer';
 import { IsDate, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { Types } from 'mongoose';
-import { ToDateFormat } from 'src/decorators';
-import { EPostStatus } from 'src/enums';
-import { PaginateDto } from '../common';
+import { ToDateFormat } from 'src/common/decorators';
+import { EPostStatus } from 'src/common/enums';
 
 export class CreatePostDto {
   @IsNotEmpty()

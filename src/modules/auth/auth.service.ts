@@ -8,7 +8,7 @@ import { DecodedIdToken } from 'firebase-admin/auth';
 import { AuthError, AuthErrorConstants } from 'src/modules/auth';
 import { UsersService } from 'src/modules/user';
 import { FirebaseService } from 'src/modules/firebase';
-import { UserDto } from 'src/dto';
+import { UserDto } from 'src/common/dto';
 
 @Injectable()
 export class AuthService {
