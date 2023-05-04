@@ -31,6 +31,6 @@ export class FirebaseAuthStrategy extends PassportStrategy(
       throw new UnauthorizedException(AuthErrorConstants.ACCOUNT_NOT_EXISTS);
     }
 
-    return await this.authService.validateUserInMongo(user);
+    return user;
   }
 }

@@ -1,5 +1,5 @@
 import { Types, Document } from 'mongoose';
-import { Post } from '../posts.schema';
+import { Post } from '../schema/posts.schema';
 
 export type TPostQueryByMongoose = Document<unknown, object, Post> &
   Omit<

@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -12,6 +13,7 @@ import { DecodedIdToken, UserRecord } from 'firebase-admin/lib/auth';
 import { TConfigService, configuration } from 'src/common/config';
 import { FirebaseError } from './firebase.error';
 import { AuthErrorConstants } from '../auth';
+import { EUserRoles } from 'src/modules/user/enum';
 
 @Injectable()
 export class FirebaseService {
@@ -64,7 +66,7 @@ export class FirebaseService {
 
   private async updateCustomClaim(
     uid: string,
-    customClaim: { customRole: 'admin' | 'advertiser' | 'user' },
+    customClaim: { customRole: EUserRoles },
   ): Promise<void> {
     try {
       await this.admin.auth().setCustomUserClaims(uid, customClaim);
@@ -77,8 +79,7 @@ export class FirebaseService {
     try {
       return await this.admin.auth().verifyIdToken(token);
     } catch (error) {
-      const err = new FirebaseError(error);
-      console.error(err);
+      console.error(error);
       throw new UnauthorizedException(AuthErrorConstants.TOKEN_EXPIRE);
     }
   }
@@ -93,25 +94,8 @@ export class FirebaseService {
     }
   }
 
-  public async updateRoleToAdmin(uid: string): Promise<void> {
-    try {
-      await this.updateCustomClaim(uid, { customRole: 'admin' });
-    } catch (error) {
-      this.errorException(error);
-    }
-  }
-
-  public async updateRoleToAdvertiser(uid: string): Promise<void> {
-    try {
-      await this.updateCustomClaim(uid, { customRole: 'advertiser' });
-    } catch (error) {
-      this.errorException(error);
-    }
-  }
-
-  private errorException(error) {
-    const err = new FirebaseError(error);
-    console.error(err);
+  private errorException(error: unknown) {
+    console.log(error);
     throw new InternalServerErrorException();
   }
 }

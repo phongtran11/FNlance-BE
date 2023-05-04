@@ -1,40 +1,18 @@
 import { Exclude, Expose } from 'class-transformer';
-import { IsDate, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { Types } from 'mongoose';
-import { ToDateFormat } from 'src/common/decorators';
-import { EPostStatus } from 'src/common/enums';
-
-export class CreatePostDto {
-  @IsNotEmpty()
-  userId: string;
-
-  @IsString()
-  title: string;
-
-  @IsString()
-  description: string;
-
-  @IsNotEmpty()
-  tag: string[];
-
-  @IsString()
-  location: string;
-
-  @IsNumber()
-  budgetFrom: number;
-
-  @IsNumber()
-  budgetTo: number;
-
-  @ToDateFormat()
-  @IsDate()
-  expiredDay: Date;
-}
+import {
+  EPostStatus,
+  ETypeOfJob,
+  ETypeOfWork,
+  EWorkingForm,
+  EPayForm,
+  EStatusPostReceive,
+} from '../enum';
 
 @Exclude()
 export class PostDto {
   @Expose()
-  id?: Types.ObjectId;
+  id: Types.ObjectId;
 
   @Expose()
   userId: Types.ObjectId;
@@ -44,9 +22,6 @@ export class PostDto {
 
   @Expose()
   description: string;
-
-  @Expose()
-  status?: EPostStatus;
 
   @Expose()
   tag: string[];
@@ -59,6 +34,21 @@ export class PostDto {
 
   @Expose()
   budget: [number, number];
+
+  @Expose()
+  status: EPostStatus;
+
+  @Expose()
+  typeOfJob: ETypeOfJob;
+
+  @Expose()
+  typeOfWork: ETypeOfWork;
+
+  @Expose()
+  workingForm: EWorkingForm;
+
+  @Expose()
+  payForm: EPayForm;
 }
 
 @Exclude()
@@ -77,4 +67,22 @@ export class ListPostDto {
 
   @Expose()
   totalPage: number;
+}
+
+@Exclude()
+export class PostReceiveDto {
+  @Expose()
+  userId: Types.ObjectId;
+
+  @Expose()
+  postId: Types.ObjectId;
+
+  @Expose()
+  dateReceive: Date;
+
+  @Expose()
+  dateDone: Date;
+
+  @Expose()
+  statusPostReceive: EStatusPostReceive;
 }

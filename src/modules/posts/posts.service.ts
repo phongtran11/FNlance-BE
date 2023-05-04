@@ -1,52 +1,139 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 
-import { PostsRepository } from './posts.repository';
-import { CreatePostDto, ListPostDto, PostDto } from 'src/common/dto/posts';
-import { UsersRepository } from '../user';
+import {
+  CreatePostDto,
+  FilterPostsDto,
+  ListPostDto,
+  PostDto,
+  PostReceiveDto,
+} from 'src/modules/posts/dto';
+import { UsersService } from '../user/user.service';
 import { PaginateDto } from 'src/common/dto';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { Post } from './schema';
+import { UserDto } from '../user/dto';
+import { TUserObjectMongoose } from '../user/types';
 
 @Injectable()
 export class PostsService {
   constructor(
-    private readonly postsRepository: PostsRepository,
-    private readonly usersRepository: UsersRepository,
+    private readonly usersService: UsersService,
+    @InjectModel('Post') private readonly postModel: Model<Post>,
   ) {}
 
-  async createPost(createPostDto: CreatePostDto): Promise<PostDto> {
-    const newPost = await this.postsRepository.createPost(createPostDto);
-    const user = await this.usersRepository.getById(createPostDto.userId);
+  async createPost({
+    userId,
+    title,
+    description,
+    tags,
+    location,
+    budgetFrom,
+    budgetTo,
+    expiredDay,
+    typeOfJob,
+    typeOfWork,
+    workingForm,
+    payForm,
+  }: CreatePostDto): Promise<PostDto> {
+    const user = await this.usersService.getUserById(userId);
 
-    try {
-      user.postsId = [...user.postsId, newPost.id];
-      await user.save();
-    } catch (error) {
-      Logger.error('PostServices ' + new Date().toISOString() + error);
+    if (!user) {
+      throw new BadRequestException("UserId isn't exists");
     }
 
-    return plainToInstance(PostDto, newPost);
+    try {
+      const newPost = new this.postModel({
+        userId,
+        title,
+        description,
+        tags,
+        location,
+        budget: [budgetFrom, budgetTo],
+        expiredDay,
+        typeOfJob,
+        typeOfWork,
+        workingForm,
+        payForm,
+      });
+      await newPost.save();
+
+      this.usersService.updateUser(new Types.ObjectId(userId), {
+        postsId: [...user.postsId, newPost._id],
+      });
+
+      return plainToInstance(PostDto, newPost);
+    } catch (error) {
+      this.errorException(error);
+    }
   }
 
-  async getList(paginateDto: PaginateDto): Promise<ListPostDto> {
-    const list = await this.postsRepository.getList(paginateDto);
-    const totalPost = await this.postsRepository.countDocument();
-    const totalPage =
-      totalPost / paginateDto.limit < 1
-        ? 1
-        : Math.ceil(totalPost / paginateDto.limit);
+  async getListPost(
+    { page, limit }: PaginateDto,
+    { tag, ...filterPosts }: FilterPostsDto,
+  ): Promise<ListPostDto> {
+    try {
+      const filterTag = tag ? { tags: { $in: [tag] } } : {};
+      const filter = Object.assign(filterPosts, filterTag);
 
-    return plainToInstance(ListPostDto, {
-      listPost: list,
-      page: paginateDto.page,
-      limit: paginateDto.limit,
-      totalPost,
-      totalPage,
-    });
+      const posts = await this.postModel.find(
+        filter,
+        {},
+        {
+          skip: (page - 1) * limit,
+          limit,
+        },
+      );
+
+      const totalPost = await this.postModel.count(filter);
+      const totalPage =
+        Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
+      return {
+        listPost: plainToInstance(PostDto, posts),
+        totalPost,
+        totalPage,
+        page,
+        limit,
+      };
+    } catch (error) {
+      this.errorException(error);
+    }
   }
 
-  async getPostById(postId: Types.ObjectId): Promise<PostDto> {
-    const post = this.postsRepository.getPostById(postId);
-    return plainToInstance(PostDto, post);
+  async getPostById(_id: Types.ObjectId): Promise<PostDto> {
+    try {
+      const post = await this.postModel.findById(_id);
+
+      return plainToInstance(PostDto, post);
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  async receivePost(
+    postId: Types.ObjectId,
+    firebaseId: string,
+  ): Promise<TUserObjectMongoose> {
+    try {
+      const user = await this.usersService.getUserByUid(firebaseId);
+
+      const userUpdate = await this.usersService.updateUser(user.id, {
+        postsReceive: [...user.postsReceive, postId],
+      });
+
+      return await userUpdate.populate('postsReceive');
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  private errorException(error: unknown) {
+    console.log(error);
+    throw new InternalServerErrorException();
   }
 }

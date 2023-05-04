@@ -1,20 +1,78 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Model, Types } from 'mongoose';
 
-import { UsersRepository } from './user.repository';
 import { plainToInstance } from 'class-transformer';
-import { UserDto } from 'src/common/dto';
+import { UserDto } from './dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { User } from './user.schema';
+import { TPropsUpdateUser, TUserObjectMongoose } from './types';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly userRepository: UsersRepository) {}
+  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
-  async createUser(userDto: UserDto): Promise<UserDto> {
-    const newUser = await this.userRepository.create(userDto);
-    return plainToInstance(UserDto, newUser);
+  async createUser({
+    email,
+    password,
+    displayName,
+    firebaseId,
+    avatar,
+    customClaims,
+  }: UserDto): Promise<TUserObjectMongoose> {
+    try {
+      const newUser = new this.userModel({
+        displayName,
+        password,
+        email,
+        firebaseId,
+        avatar,
+        customClaims,
+      });
+      await newUser.save();
+
+      return newUser;
+    } catch (error) {
+      this.errorException(error);
+    }
   }
 
-  async getUserByUid(uid: string): Promise<UserDto> {
-    const user = this.userRepository.getByUid(uid);
-    return plainToInstance(UserDto, user);
+  async getUserByUid(uid: string): Promise<TUserObjectMongoose> {
+    try {
+      return await this.userModel.findOne({ firebaseId: uid });
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  async getUserById(id: Types.ObjectId): Promise<TUserObjectMongoose> {
+    try {
+      return await this.userModel.findOne({ _id: id });
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  async updateUser(
+    id: Types.ObjectId,
+    propsUpdate: TPropsUpdateUser,
+  ): Promise<TUserObjectMongoose> {
+    const user = await this.userModel.findOneAndUpdate(
+      { _id: id },
+      { $set: propsUpdate },
+    );
+    return user;
+  }
+
+  async getListPostOfUser(userId: Types.ObjectId) {
+    return await this.userModel.findById(userId).populate('postsId');
+  }
+
+  async getListPostReceiveOfUser(userId: Types.ObjectId) {
+    return await this.userModel.findById(userId).populate('postsReceive');
+  }
+
+  private errorException(error) {
+    console.error(`[User Services]: ${new Date().toDateString()}`, error);
+    throw new InternalServerErrorException();
   }
 }

@@ -1,11 +1,11 @@
 import { Exclude, Expose } from 'class-transformer';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 
 @Exclude()
 export class UserDto {
   @Expose()
-  id?: string;
+  id?: Types.ObjectId;
 
   @Expose()
   @IsEmail()
@@ -33,9 +33,12 @@ export class UserDto {
 
   @Expose()
   postsId?: Types.ObjectId[];
+
+  @Expose()
+  postsReceive?: Types.ObjectId[];
 }
 
 export class GetUserByUidDTO {
-  @IsString()
-  uid: string;
+  @IsNotEmpty()
+  id: string;
 }

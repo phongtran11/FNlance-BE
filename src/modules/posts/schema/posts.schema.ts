@@ -1,6 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { EPostStatus } from 'src/common/enums';
+import {
+  EPostStatus,
+  ETypeOfJob,
+  ETypeOfWork,
+  EWorkingForm,
+  EPayForm,
+} from '../enum';
 
 export type PostDocument = Post & Document;
 
@@ -19,7 +25,7 @@ export type PostDocument = Post & Document;
   minimize: false,
 })
 export class Post {
-  @Prop({ type: Types.ObjectId, ref: 'user' })
+  @Prop({ type: Types.ObjectId, ref: 'User' })
   userId: Types.ObjectId;
 
   @Prop({ type: String, trim: true })
@@ -32,7 +38,7 @@ export class Post {
   status: EPostStatus;
 
   @Prop({ type: [String] })
-  tag: string[];
+  tags: string[];
 
   @Prop({ type: String })
   location: string;
@@ -42,6 +48,18 @@ export class Post {
 
   @Prop({ type: Date })
   expiredDay: Date;
+
+  @Prop({ type: String, default: ETypeOfJob.PROGRAMMING })
+  typeOfJob: ETypeOfJob;
+
+  @Prop({ type: String, default: ETypeOfWork.PART_TIME })
+  typeOfWork: ETypeOfWork;
+
+  @Prop({ type: String, default: EWorkingForm.REMOTE })
+  workingForm: EWorkingForm;
+
+  @Prop({ type: String, default: EPayForm.MONTH })
+  payForm: EPayForm;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

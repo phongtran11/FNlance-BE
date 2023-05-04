@@ -36,8 +36,11 @@ export class User {
   @Prop({ type: Object, default: { customRole: 'user' } })
   customClaims: Record<string, any>;
 
-  @Prop({ type: [Types.ObjectId], ref: 'post' })
+  @Prop({ type: [Types.ObjectId], ref: 'Post' })
   postsId: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'Post' })
+  postsReceive: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
