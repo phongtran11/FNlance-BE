@@ -10,14 +10,12 @@ import {
   FilterPostsDto,
   ListPostDto,
   PostDto,
-  PostReceiveDto,
 } from 'src/modules/posts/dto';
-import { UsersService } from '../user/user.service';
+import { UsersService } from '../user';
 import { PaginateDto } from 'src/common/dto';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post } from './schema';
-import { UserDto } from '../user/dto';
 import { TUserObjectMongoose } from '../user/types';
 
 @Injectable()
@@ -63,7 +61,7 @@ export class PostsService {
       });
       await newPost.save();
 
-      this.usersService.updateUser(new Types.ObjectId(userId), {
+      await this.usersService.updateUser(new Types.ObjectId(userId), {
         postsId: [...user.postsId, newPost._id],
       });
 
@@ -75,11 +73,13 @@ export class PostsService {
 
   async getListPost(
     { page, limit }: PaginateDto,
-    { tag, ...filterPosts }: FilterPostsDto,
+    { tag, titleSearch, ...filterPosts }: FilterPostsDto,
   ): Promise<ListPostDto> {
     try {
       const filterTag = tag ? { tags: { $in: [tag] } } : {};
-      const filter = Object.assign(filterPosts, filterTag);
+      const searchTitle = titleSearch ? { title: { $regex: titleSearch } } : {};
+      let filter = Object.assign(filterPosts, filterTag);
+      filter = Object.assign(filter, searchTitle);
 
       const posts = await this.postModel.find(
         filter,

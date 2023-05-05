@@ -1,11 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import {
+  EPayForm,
   EPostStatus,
   ETypeOfJob,
+  ETypeOfServices,
   ETypeOfWork,
   EWorkingForm,
-  EPayForm,
 } from '../enum';
 
 export type PostDocument = Post & Document;
@@ -49,8 +50,11 @@ export class Post {
   @Prop({ type: Date })
   expiredDay: Date;
 
-  @Prop({ type: String, default: ETypeOfJob.PROGRAMMING })
+  @Prop({ type: String, default: ETypeOfJob.DEVELOP_WEBSITE })
   typeOfJob: ETypeOfJob;
+
+  @Prop({ type: String, default: ETypeOfServices.BUILD_MOBILE_APP })
+  typeOfServices: ETypeOfServices;
 
   @Prop({ type: String, default: ETypeOfWork.PART_TIME })
   typeOfWork: ETypeOfWork;

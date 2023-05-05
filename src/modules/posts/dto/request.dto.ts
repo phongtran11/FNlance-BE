@@ -1,4 +1,3 @@
-import { Exclude, Expose } from 'class-transformer';
 import {
   IsDate,
   IsEnum,
@@ -10,13 +9,14 @@ import {
 import { Types } from 'mongoose';
 import { ToDateFormat } from 'src/common/decorators';
 
-import { PaginateDto } from '../../../common/dto/common';
+import { PaginateDto } from '../../../common';
 import {
-  ETypeOfJob,
-  ETypeOfWork,
-  EWorkingForm,
   EPayForm,
   EPostStatus,
+  ETypeOfJob,
+  ETypeOfServices,
+  ETypeOfWork,
+  EWorkingForm,
 } from '../enum';
 
 export class CreatePostDto {
@@ -86,4 +86,11 @@ export class FilterPostsDto {
   @IsEnum(EPayForm)
   @IsOptional()
   payForm?: EPayForm;
+
+  @IsOptional()
+  titleSearch?: string;
+
+  @IsOptional()
+  @IsEnum(ETypeOfServices)
+  typeOfServices?: ETypeOfServices;
 }

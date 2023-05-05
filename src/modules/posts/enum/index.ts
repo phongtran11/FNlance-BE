@@ -10,8 +10,20 @@ export enum ETypeOfWork {
 }
 
 export enum ETypeOfJob {
-  PROGRAMMING = 'programming',
+  DEVELOP_WEBSITE = 'developWebsite',
   DESIGN = 'design',
+  TESTER = 'tester',
+  OTHER = 'other',
+}
+
+export enum ETypeOfServices {
+  BUILD_WEB_APP = 'buildWebApp',
+  BUILD_MOBILE_APP = 'buildMobileApp',
+  DESIGN_LOGO = 'designLogo',
+  DESIGN_WEB = 'designWeb',
+  TEST_WEB_APP = 'testWebApp',
+  TEST_MOBILE_APP = 'testMobileApp',
+  OTHER = 'OTHER',
 }
 
 export enum EWorkingForm {

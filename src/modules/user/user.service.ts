@@ -64,11 +64,19 @@ export class UsersService {
   }
 
   async getListPostOfUser(userId: Types.ObjectId) {
-    return await this.userModel.findById(userId).populate('postsId');
+    const userPopulate = await this.userModel
+      .findById(userId)
+      .populate('postsId');
+
+    return userPopulate.postsId;
   }
 
   async getListPostReceiveOfUser(userId: Types.ObjectId) {
-    return await this.userModel.findById(userId).populate('postsReceive');
+    const userPopulate = await this.userModel
+      .findById(userId)
+      .populate('postsReceive');
+
+    return userPopulate.postsReceive;
   }
 
   private errorException(error) {
