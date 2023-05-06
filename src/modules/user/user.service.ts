@@ -1,7 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
-
-import { plainToInstance } from 'class-transformer';
 import { UserDto } from './dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
@@ -80,7 +78,7 @@ export class UsersService {
   }
 
   private errorException(error) {
-    console.error(`[User Services]: ${new Date().toDateString()}`, error);
+    console.error(`[User Services]: ${new Date()}`, error);
     throw new InternalServerErrorException();
   }
 }

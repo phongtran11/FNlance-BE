@@ -34,7 +34,7 @@ export class UsersController {
     if (!userFounded) {
       const userInFirebase = await this.firebaseService.getUserByUid(user.uid);
 
-      const newUser = await this.usersService.createUser({
+      userFounded = await this.usersService.createUser({
         email: userInFirebase.email,
         password: userInFirebase.passwordSalt,
         displayName: userInFirebase.displayName,
@@ -42,8 +42,6 @@ export class UsersController {
         avatar: userInFirebase.photoURL,
         customClaims: userInFirebase.customClaims,
       });
-
-      userFounded = newUser;
     }
 
     return plainToInstance(UserDto, userFounded);

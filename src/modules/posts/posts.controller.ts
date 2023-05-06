@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  HttpCode,
   NotFoundException,
   Param,
   Post,
@@ -13,11 +12,10 @@ import {
 
 import { CreatePostDto, FilterPostsDto, PostDto } from 'src/modules/posts/dto';
 import { PostsService } from './posts.service';
-import { FirebaseAuthGuard } from '../auth';
+import { FirebaseAuthGuard } from '../auth/firebase.guard';
 import { PaginateDto } from 'src/common/dto';
 import { ParseMongooseObjectID } from 'src/common';
 import { Types } from 'mongoose';
-import { UserDto } from '../user/dto';
 import { DecodedIdToken } from 'firebase-admin/auth';
 
 @Controller('posts')

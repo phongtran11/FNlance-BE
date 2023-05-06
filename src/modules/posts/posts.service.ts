@@ -133,7 +133,7 @@ export class PostsService {
   }
 
   private errorException(error: unknown) {
-    console.log(error);
+    console.log(new Date(), error);
     throw new InternalServerErrorException();
   }
 }

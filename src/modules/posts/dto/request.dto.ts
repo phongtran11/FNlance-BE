@@ -8,8 +8,6 @@ import {
 } from 'class-validator';
 import { Types } from 'mongoose';
 import { ToDateFormat } from 'src/common/decorators';
-
-import { PaginateDto } from '../../../common';
 import {
   EPayForm,
   EPostStatus,
@@ -56,11 +54,6 @@ export class CreatePostDto {
 
   @IsEnum(EPayForm)
   payForm: EPayForm;
-}
-
-export class GetListPostOfTagDto extends PaginateDto {
-  @IsNotEmpty()
-  tags: string[];
 }
 
 export class FilterPostsDto {
