@@ -54,11 +54,13 @@ export class UsersService {
     id: Types.ObjectId,
     propsUpdate: TPropsUpdateUser,
   ): Promise<TUserObjectMongoose> {
-    const user = await this.userModel.findOneAndUpdate(
+    return await this.userModel.findOneAndUpdate(
       { _id: id },
       { $set: propsUpdate },
+      {
+        new: true,
+      },
     );
-    return user;
   }
 
   async getListPostOfUser(userId: Types.ObjectId) {

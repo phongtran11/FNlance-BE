@@ -3,3 +3,9 @@ export enum EUserRoles {
   ADVERTISER = 'advertiser',
   USER = 'user',
 }
+export enum EUserMajor {
+  FRONTEND = 'frontend',
+  BACKEND = 'backend',
+  DESIGNER = 'designer',
+  OTHER = 'other',
+}

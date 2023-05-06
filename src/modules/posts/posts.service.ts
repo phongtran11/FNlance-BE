@@ -81,20 +81,26 @@ export class PostsService {
       let filter = Object.assign(filterPosts, filterTag);
       filter = Object.assign(filter, searchTitle);
 
-      const posts = await this.postModel.find(
-        filter,
-        {},
-        {
-          skip: (page - 1) * limit,
-          limit,
-        },
-      );
+      const posts = await this.postModel
+        .find(
+          filter,
+          {},
+          {
+            skip: (page - 1) * limit,
+            limit,
+          },
+        )
+        .populate({
+          path: 'userId',
+          select: ['id', 'email', 'username', 'avatar'],
+        });
 
       const totalPost = await this.postModel.count(filter);
       const totalPage =
         Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
+
       return {
-        listPost: plainToInstance(PostDto, posts),
+        listPost: posts,
         totalPost,
         totalPage,
         page,
@@ -105,11 +111,12 @@ export class PostsService {
     }
   }
 
-  async getPostById(_id: Types.ObjectId): Promise<PostDto> {
+  async getPostById(_id: Types.ObjectId) {
     try {
-      const post = await this.postModel.findById(_id);
-
-      return plainToInstance(PostDto, post);
+      return await this.postModel.findById(_id).populate({
+        path: 'userId',
+        select: ['id', 'email', 'username', 'avatar'],
+      });
     } catch (error) {
       this.errorException(error);
     }
@@ -133,7 +140,8 @@ export class PostsService {
   }
 
   private errorException(error: unknown) {
-    console.log(new Date(), error);
+    console.log(new Date());
+    console.error(error);
     throw new InternalServerErrorException();
   }
 }

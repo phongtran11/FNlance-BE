@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { EUserMajor } from './enum';
 
 export type UserDocument = User & Document;
 
@@ -41,6 +42,15 @@ export class User {
 
   @Prop({ type: [Types.ObjectId], ref: 'Post' })
   postsReceive: Types.ObjectId[];
+
+  @Prop({ type: String })
+  address: string;
+
+  @Prop({ type: [String] })
+  major: EUserMajor[];
+
+  @Prop({ type: String })
+  phoneNumber: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

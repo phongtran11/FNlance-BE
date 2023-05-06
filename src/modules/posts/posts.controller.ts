@@ -33,7 +33,7 @@ export class PostsController {
   @Get(':postId')
   async getPost(
     @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
-  ): Promise<PostDto> {
+  ) {
     const post = await this.postsService.getPostById(postId);
 
     if (!post) throw new NotFoundException("Post's not found");

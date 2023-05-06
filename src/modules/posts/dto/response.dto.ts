@@ -11,12 +11,24 @@ import {
 } from '../enum';
 
 @Exclude()
+class UserInPost {
+  @Expose()
+  email: string;
+  @Expose()
+  username: string;
+  @Expose()
+  avatar: string;
+  @Expose()
+  id: string;
+}
+
+@Exclude()
 export class PostDto {
   @Expose()
   id: Types.ObjectId;
 
   @Expose()
-  userId: Types.ObjectId;
+  userId: UserInPost;
 
   @Expose()
   title: string;
@@ -58,7 +70,7 @@ export class PostDto {
 @Exclude()
 export class ListPostDto {
   @Expose()
-  listPost: PostDto[];
+  listPost: any[];
 
   @Expose()
   totalPost: number;

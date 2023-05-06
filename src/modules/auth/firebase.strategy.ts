@@ -5,6 +5,7 @@ import { Strategy } from 'passport-custom';
 import { FirebaseService } from 'src/modules/firebase';
 import { AuthService } from './auth.service';
 import { AuthErrorConstants } from './auth.error';
+import { UsersService } from '../user';
 
 @Injectable()
 export class FirebaseAuthStrategy extends PassportStrategy(
@@ -14,6 +15,7 @@ export class FirebaseAuthStrategy extends PassportStrategy(
   constructor(
     private readonly firebaseService: FirebaseService,
     private readonly authService: AuthService,
+    private readonly userService: UsersService,
   ) {
     super();
   }
@@ -31,6 +33,6 @@ export class FirebaseAuthStrategy extends PassportStrategy(
       throw new UnauthorizedException(AuthErrorConstants.ACCOUNT_NOT_EXISTS);
     }
 
-    return user;
+    return await this.userService.getUserByUid(user.uid);
   }
 }
