@@ -1,12 +1,13 @@
 import { Exclude, Expose } from 'class-transformer';
 import { Types } from 'mongoose';
 import {
+  EPayForm,
   EPostStatus,
+  EStatusPostReceive,
   ETypeOfJob,
+  ETypeOfServices,
   ETypeOfWork,
   EWorkingForm,
-  EPayForm,
-  EStatusPostReceive,
 } from '../enum';
 
 @Exclude()
@@ -40,6 +41,9 @@ export class PostDto {
 
   @Expose()
   typeOfJob: ETypeOfJob;
+
+  @Expose()
+  typeOfServices: ETypeOfServices;
 
   @Expose()
   typeOfWork: ETypeOfWork;

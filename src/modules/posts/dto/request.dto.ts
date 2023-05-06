@@ -49,6 +49,9 @@ export class CreatePostDto {
   @IsEnum(ETypeOfWork)
   typeOfWork: ETypeOfWork;
 
+  @IsEnum(ETypeOfServices)
+  typeOfServices?: ETypeOfServices;
+
   @IsEnum(EWorkingForm)
   workingForm: EWorkingForm;
 
