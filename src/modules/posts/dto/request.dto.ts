@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsDate,
   IsEnum,
   IsNotEmpty,
@@ -28,6 +29,7 @@ export class CreatePostDto {
   description: string;
 
   @IsNotEmpty()
+  @IsArray()
   tags: string[];
 
   @IsString()
@@ -56,6 +58,7 @@ export class CreatePostDto {
   workingForm: EWorkingForm;
 
   @IsEnum(EPayForm)
+  @IsOptional()
   payForm: EPayForm;
 }
 
