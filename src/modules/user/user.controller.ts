@@ -12,47 +12,96 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-
-import { FirebaseAuthGuard } from '../auth/firebase.guard';
-import { UsersService } from './user.service';
-import { configuration, ParseMongooseObjectID } from 'src/common';
-import { Types } from 'mongoose';
-import { DecodedIdToken } from 'firebase-admin/auth';
-import { UpdateUserRequestDto, UserDto } from './dto';
-import { FirebaseService } from '../firebase';
-import { plainToInstance } from 'class-transformer';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { FileSizeValidationPipe } from '../../common/pipe/validateFilePipe.pipe';
-import { diskStorage } from 'multer';
-import * as path from 'path';
+import { plainToInstance } from 'class-transformer';
+import { DecodedIdToken } from 'firebase-admin/auth';
+import { Types } from 'mongoose';
+
+import { configuration } from 'src/config';
+import { UpdateUserDto, UserDto } from 'src/dto';
+import { FileSizeValidationPipe, ParseMongooseObjectID } from 'src/pipe';
+import { TRequestWithToken } from 'src/types';
+
+import { FirebaseAuthGuard } from '../auth';
+import { PostsService } from '../posts';
+
+import { UsersService } from './user.service';
+import { storageUploadHandle } from 'src/utils';
 
 @Controller('users')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly firebaseService: FirebaseService,
+    private readonly postsService: PostsService,
   ) {}
 
   @UseGuards(FirebaseAuthGuard)
   @Post('sign-in')
   @HttpCode(200)
   public async signIn(@Req() { user }: { user: DecodedIdToken }) {
-    let userFounded = await this.usersService.getUserByUid(user.uid);
+    const userInDb = await this.usersService.getUserByUid(user.uid);
 
-    if (!userFounded) {
-      const userInFirebase = await this.firebaseService.getUserByUid(user.uid);
-
-      userFounded = await this.usersService.createUser({
-        email: userInFirebase.email,
-        password: userInFirebase.passwordSalt,
-        displayName: userInFirebase.displayName,
-        firebaseId: userInFirebase.uid,
-        avatar: userInFirebase.photoURL,
-        customClaims: userInFirebase.customClaims,
+    if (!userInDb) {
+      const newUser = await this.usersService.createUser({
+        email: user.email,
+        password: user.passwordSalt,
+        displayName: user.displayName,
+        firebaseId: user.uid,
+        avatar: user.photoURL,
+        customClaims: user.customClaims,
       });
+
+      return plainToInstance(UserDto, newUser);
     }
 
-    return plainToInstance(UserDto, userFounded);
+    return plainToInstance(UserDto, userInDb);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Get('profile/list-post')
+  async getListPost(@Req() { user: { uid } }: { user: DecodedIdToken }) {
+    const postsOfUser = await this.usersService.getListPostOfUser(uid);
+
+    return postsOfUser;
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Get('profile/list-post-receive')
+  async getListPostReceive(@Req() { user: { uid } }: TRequestWithToken) {
+    const postsId = await this.usersService.getListPostReceiveOfUser(uid);
+
+    const postPromise = postsId.map((post) => {
+      return this.postsService.getPostById(post._id);
+    });
+
+    const postsReceive = await Promise.all(postPromise);
+
+    return postsReceive;
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Put('profile/update')
+  async updateUser(
+    @Req() req: TRequestWithToken,
+    @Body() updateUser: UpdateUserDto,
+  ) {
+    return await this.usersService.updateUser(req.user.uid, updateUser);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post('profile/upload')
+  @UseInterceptors(FileInterceptor('avatar', storageUploadHandle))
+  async uploadFile(
+    @UploadedFile(FileSizeValidationPipe) file: Express.Multer.File,
+    @Req() req: TRequestWithToken,
+  ) {
+    const baseUrl = configuration().baseUrl;
+    const avatarUrl: string = baseUrl + file.path.replace('public/', '');
+    const userId = req.user.uid;
+
+    return await this.usersService.updateUser(userId, {
+      avatar: avatarUrl,
+    });
   }
 
   @Get('profile/:id')
@@ -64,56 +113,5 @@ export class UsersController {
     }
 
     return plainToInstance(UserDto, user);
-  }
-
-  @UseGuards(FirebaseAuthGuard)
-  @Get('profile/:id/list-post')
-  async getListPost(
-    @Param('id', ParseMongooseObjectID) userId: Types.ObjectId,
-  ) {
-    return await this.usersService.getListPostOfUser(userId);
-  }
-
-  @UseGuards(FirebaseAuthGuard)
-  @Get('profile/:id/list-post-receive')
-  async getListPostReceive(
-    @Param('id', ParseMongooseObjectID) userId: Types.ObjectId,
-  ) {
-    return await this.usersService.getListPostReceiveOfUser(userId);
-  }
-
-  @UseGuards(FirebaseAuthGuard)
-  @Put('profile/update')
-  async updateUser(@Req() req, @Body() updateUser: UpdateUserRequestDto) {
-    return await this.usersService.updateUser(req.user.id, updateUser);
-  }
-
-  @UseGuards(FirebaseAuthGuard)
-  @Post('profile/upload')
-  @UseInterceptors(
-    FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: './public/profile-images',
-        filename: (req, file, cb) => {
-          const filename: string =
-            path.parse(file.originalname).name.replace(/\s/g, '') +
-            Date.now() +
-            Math.round(Math.random() * 1e9);
-          const extension: string = path.parse(file.originalname).ext;
-
-          cb(null, `${filename}${extension}`);
-        },
-      }),
-    }),
-  )
-  async uploadFile(
-    @UploadedFile(FileSizeValidationPipe) file: Express.Multer.File,
-    @Req() req,
-  ) {
-    const baseUrl = configuration().baseUrl;
-    const avatarUrl: string = baseUrl + file.path.replace('public/', '');
-    const userId = req.user.id;
-
-    return await this.usersService.updateUser(userId, { avatar: avatarUrl });
   }
 }

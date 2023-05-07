@@ -1,16 +1,20 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+
+import { PostSchema } from 'src/database';
+
+import { UsersModule } from '../user';
+
 import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
-import { PostSchema } from './schema/posts.schema';
-import { MongooseModule } from '@nestjs/mongoose';
-import { UsersModule } from '../user/user.module';
 
 @Module({
   imports: [
-    UsersModule,
     MongooseModule.forFeature([{ name: 'Post', schema: PostSchema }]),
+    forwardRef(() => UsersModule),
   ],
   controllers: [PostsController],
   providers: [PostsService],
+  exports: [PostsService],
 })
 export class PostsModule {}

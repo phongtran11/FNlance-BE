@@ -1,9 +1,10 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { Model, Types } from 'mongoose';
-import { UserDto } from './dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { User } from './user.schema';
-import { TPropsUpdateUser, TUserObjectMongoose } from './types';
+import { Model, Types } from 'mongoose';
+
+import { User } from 'src/database';
+import { UserDto } from 'src/dto';
+import { TUserObjectMongoose, TPropsUpdateUser } from 'src/types';
 
 @Injectable()
 export class UsersService {
@@ -30,57 +31,71 @@ export class UsersService {
 
       return newUser;
     } catch (error) {
-      this.errorException(error);
+      this.errorException(error, 'Cant create user');
     }
   }
 
   async getUserByUid(uid: string): Promise<TUserObjectMongoose> {
-    try {
-      return await this.userModel.findOne({ firebaseId: uid });
-    } catch (error) {
-      this.errorException(error);
-    }
+    return await this.userModel.findOne({ firebaseId: uid });
   }
 
   async getUserById(id: Types.ObjectId): Promise<TUserObjectMongoose> {
-    try {
-      return await this.userModel.findOne({ _id: id });
-    } catch (error) {
-      this.errorException(error);
-    }
+    return await this.userModel.findOne({ _id: id });
   }
 
   async updateUser(
-    id: Types.ObjectId,
+    uid: string,
     propsUpdate: TPropsUpdateUser,
   ): Promise<TUserObjectMongoose> {
-    return await this.userModel.findOneAndUpdate(
-      { _id: id },
-      { $set: propsUpdate },
-      {
-        new: true,
-      },
-    );
+    try {
+      return await this.userModel.findOneAndUpdate(
+        { firebaseId: uid },
+        { $set: propsUpdate },
+        {
+          new: true,
+        },
+      );
+    } catch (error) {
+      this.errorException(error, 'Cant update user');
+    }
   }
 
-  async getListPostOfUser(userId: Types.ObjectId) {
-    const userPopulate = await this.userModel
-      .findById(userId)
-      .populate('postsId');
+  async getListPostOfUser(uid: string) {
+    try {
+      const userPopulate = await this.userModel
+        .findOne({ firebaseId: uid })
+        .populate('postsId');
 
-    return userPopulate.postsId;
+      if (userPopulate.postsId.length === 0) {
+        return [];
+      }
+
+      return userPopulate;
+    } catch (error) {
+      this.errorException(error, 'Cant get list post of user');
+    }
   }
 
-  async getListPostReceiveOfUser(userId: Types.ObjectId) {
-    const userPopulate = await this.userModel
-      .findById(userId)
-      .populate('postsReceive');
+  async getListPostReceiveOfUser(firebaseId: string) {
+    try {
+      const userPopulate = await this.userModel
+        .findOne({ firebaseId })
+        .populate('postsReceive');
 
-    return userPopulate.postsReceive;
+      if (userPopulate.postsReceive.length === 0) {
+        return [];
+      }
+
+      return userPopulate.postsReceive;
+    } catch (error) {
+      this.errorException(error, 'Cant get list post, user have received');
+    }
   }
 
-  private errorException(error) {
-    console.error(`[User Services]: ${new Date()}`, error);
-    throw new InternalServerErrorException();
+  private errorException(error, message?: string) {
+    console.log(new Date().toLocaleString());
+    console.log(error);
+
+    throw new InternalServerErrorException(message);
   }
 }

@@ -9,14 +9,16 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-
-import { CreatePostDto, FilterPostsDto, PostDto } from 'src/modules/posts/dto';
-import { PostsService } from './posts.service';
-import { FirebaseAuthGuard } from '../auth/firebase.guard';
-import { PaginateDto } from 'src/common/dto';
-import { ParseMongooseObjectID } from 'src/common';
 import { Types } from 'mongoose';
+
 import { DecodedIdToken } from 'firebase-admin/auth';
+
+import { PaginateDto, FilterPostsDto, CreatePostDto, PostDto } from 'src/dto';
+import { ParseMongooseObjectID } from 'src/pipe';
+
+import { FirebaseAuthGuard } from '../auth';
+
+import { PostsService } from './posts.service';
 
 @Controller('posts')
 export class PostsController {
