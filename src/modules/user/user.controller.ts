@@ -90,16 +90,18 @@ export class UsersController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post('profile/upload')
-  @UseInterceptors(FileInterceptor('avatar', storageUploadHandle()))
+  @UseInterceptors(FileInterceptor('avatar', storageUploadHandle))
   async uploadFile(
     @UploadedFile(FileSizeValidationPipe) file: Express.Multer.File,
     @Req() req: TRequestWithToken,
   ) {
     const baseUrl = configuration().baseUrl;
     const avatarUrl: string = baseUrl + file.path.replace('public/', '');
-    const userId = req.user.id;
+    const userId = req.user.uid;
 
-    return await this.usersService.updateUser(userId, { avatar: avatarUrl });
+    return await this.usersService.updateUser(userId, {
+      avatar: avatarUrl,
+    });
   }
 
   @Get('profile/:id')

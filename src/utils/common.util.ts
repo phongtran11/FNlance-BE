@@ -1,7 +1,7 @@
 import { diskStorage } from 'multer';
-import path from 'path';
+import * as path from 'path';
 
-export const storageUploadHandle = () => ({
+export const storageUploadHandle = {
   storage: diskStorage({
     destination: './public/profile-images',
     filename: (req, file, cb) => {
@@ -14,4 +14,4 @@ export const storageUploadHandle = () => ({
       cb(null, `${filename}${extension}`);
     },
   }),
-});
+};
