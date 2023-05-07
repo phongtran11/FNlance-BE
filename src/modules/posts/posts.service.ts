@@ -1,9 +1,13 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
+  forwardRef,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 
 import {
   CreatePostDto,
@@ -11,18 +15,19 @@ import {
   ListPostDto,
   PostDto,
 } from 'src/modules/posts/dto';
-import { UsersService } from '../user';
+import { UsersService } from '../user/user.service';
 import { PaginateDto } from 'src/common/dto';
-import { Model, Types } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
 import { Post } from './schema';
 import { TUserObjectMongoose } from '../user/types';
+import { EPostStatus } from './enum';
+import { TUpdateUserProp } from './types';
 
 @Injectable()
 export class PostsService {
   constructor(
-    private readonly usersService: UsersService,
     @InjectModel('Post') private readonly postModel: Model<Post>,
+    @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
   ) {}
 
   async createPost({
@@ -61,7 +66,7 @@ export class PostsService {
       });
       await newPost.save();
 
-      await this.usersService.updateUser(new Types.ObjectId(userId), {
+      await this.usersService.updateUser(user.firebaseId, {
         postsId: [...user.postsId, newPost._id],
       });
 
@@ -92,7 +97,14 @@ export class PostsService {
         )
         .populate({
           path: 'userId',
-          select: ['id', 'email', 'username', 'avatar'],
+          select: [
+            'id',
+            'email',
+            'username',
+            'avatar',
+            'address',
+            'phoneNumber',
+          ],
         });
 
       const totalPost = await this.postModel.count(filter);
@@ -115,7 +127,7 @@ export class PostsService {
     try {
       return await this.postModel.findById(_id).populate({
         path: 'userId',
-        select: ['id', 'email', 'username', 'avatar'],
+        select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
       });
     } catch (error) {
       this.errorException(error);
@@ -126,21 +138,43 @@ export class PostsService {
     postId: Types.ObjectId,
     firebaseId: string,
   ): Promise<TUserObjectMongoose> {
+    const user = await this.usersService.getUserByUid(firebaseId);
+
+    const postsReceive = await this.getPostById(postId);
+
+    if (postsReceive.status === EPostStatus.IS_RECEIVE) {
+      throw new BadRequestException('Post was received ');
+    }
+
+    await this.updatePost(postsReceive.id, {
+      status: EPostStatus.IS_RECEIVE,
+    });
+
+    const userUpdate = await this.usersService.updateUser(user.firebaseId, {
+      postsReceive: [...user.postsReceive, postId],
+    });
+
+    return await userUpdate.populate('postsReceive');
+  }
+
+  async updatePost(_id: Types.ObjectId, updateProp: TUpdateUserProp) {
     try {
-      const user = await this.usersService.getUserByUid(firebaseId);
-
-      const userUpdate = await this.usersService.updateUser(user.id, {
-        postsReceive: [...user.postsReceive, postId],
-      });
-
-      return await userUpdate.populate('postsReceive');
+      return await this.postModel.findOneAndUpdate(
+        { _id },
+        {
+          $set: updateProp,
+        },
+        {
+          new: true,
+        },
+      );
     } catch (error) {
       this.errorException(error);
     }
   }
 
   private errorException(error: unknown) {
-    console.log(new Date());
+    console.log(new Date().toLocaleString());
     console.error(error);
     throw new InternalServerErrorException();
   }

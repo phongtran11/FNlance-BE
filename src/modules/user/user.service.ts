@@ -4,10 +4,14 @@ import { UserDto } from './dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
 import { TPropsUpdateUser, TUserObjectMongoose } from './types';
+import { Post } from '../posts/schema';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+  constructor(
+    @InjectModel('User') private readonly userModel: Model<User>,
+    @InjectModel('Post') private readonly postModel: Model<Post>,
+  ) {}
 
   async createUser({
     email,
@@ -51,11 +55,11 @@ export class UsersService {
   }
 
   async updateUser(
-    id: Types.ObjectId,
+    uid: string,
     propsUpdate: TPropsUpdateUser,
   ): Promise<TUserObjectMongoose> {
     return await this.userModel.findOneAndUpdate(
-      { _id: id },
+      { firebaseId: uid },
       { $set: propsUpdate },
       {
         new: true,
@@ -63,20 +67,70 @@ export class UsersService {
     );
   }
 
-  async getListPostOfUser(userId: Types.ObjectId) {
-    const userPopulate = await this.userModel
-      .findById(userId)
-      .populate('postsId');
+  async getListPostOfUser(uid: string) {
+    try {
+      const userPopulate = await this.userModel
+        .findOne({ firebaseId: uid })
+        .populate('postsId');
 
-    return userPopulate.postsId;
+      if (userPopulate.postsId.length === 0) {
+        return [];
+      }
+
+      const postPromise = userPopulate.postsId.map((post) => {
+        return this.postModel.findById(post.id).populate({
+          path: 'userId',
+          select: [
+            'id',
+            'email',
+            'username',
+            'avatar',
+            'address',
+            'phoneNumber',
+          ],
+        });
+      });
+
+      const postsReceive = await Promise.all(postPromise);
+
+      return postsReceive;
+    } catch (error) {
+      console.log(new Date().toLocaleString());
+      console.log(error);
+    }
   }
 
-  async getListPostReceiveOfUser(userId: Types.ObjectId) {
-    const userPopulate = await this.userModel
-      .findById(userId)
-      .populate('postsReceive');
+  async getListPostReceiveOfUser(uid: string) {
+    try {
+      const userPopulate = await this.userModel
+        .findOne({ firebaseId: uid })
+        .populate('postsReceive');
 
-    return userPopulate.postsReceive;
+      if (userPopulate.postsReceive.length === 0) {
+        return [];
+      }
+
+      const postReceivePromise = userPopulate.postsReceive.map((post) => {
+        return this.postModel.findById(post.id).populate({
+          path: 'userId',
+          select: [
+            'id',
+            'email',
+            'username',
+            'avatar',
+            'address',
+            'phoneNumber',
+          ],
+        });
+      });
+
+      const postsReceive = await Promise.all(postReceivePromise);
+
+      return postsReceive;
+    } catch (error) {
+      console.log(new Date().toLocaleString());
+      console.log(error);
+    }
   }
 
   private errorException(error) {

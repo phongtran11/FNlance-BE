@@ -7,10 +7,11 @@ import { UsersModule } from '../user/user.module';
 
 @Module({
   imports: [
-    UsersModule,
     MongooseModule.forFeature([{ name: 'Post', schema: PostSchema }]),
+    UsersModule,
   ],
   controllers: [PostsController],
   providers: [PostsService],
+  exports: [PostsService],
 })
 export class PostsModule {}

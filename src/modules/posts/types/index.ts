@@ -8,3 +8,5 @@ export type TPostQueryByMongoose = Document<unknown, object, Post> &
     },
     never
   >;
+
+export type TUpdateUserProp = Partial<Record<keyof Post, any>>;

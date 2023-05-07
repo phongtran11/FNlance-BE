@@ -37,12 +37,12 @@ export class UsersController {
   @Post('sign-in')
   @HttpCode(200)
   public async signIn(@Req() { user }: { user: DecodedIdToken }) {
-    let userFounded = await this.usersService.getUserByUid(user.uid);
+    const userInDb = await this.usersService.getUserByUid(user.uid);
 
-    if (!userFounded) {
+    if (!userInDb) {
       const userInFirebase = await this.firebaseService.getUserByUid(user.uid);
 
-      userFounded = await this.usersService.createUser({
+      const newUser = await this.usersService.createUser({
         email: userInFirebase.email,
         password: userInFirebase.passwordSalt,
         displayName: userInFirebase.displayName,
@@ -50,42 +50,29 @@ export class UsersController {
         avatar: userInFirebase.photoURL,
         customClaims: userInFirebase.customClaims,
       });
+
+      return plainToInstance(UserDto, newUser);
     }
 
-    return plainToInstance(UserDto, userFounded);
-  }
-
-  @Get('profile/:id')
-  async getUserProfile(@Param('id', ParseMongooseObjectID) id: Types.ObjectId) {
-    const user = await this.usersService.getUserById(id);
-
-    if (!user) {
-      throw new NotFoundException("User's not found");
-    }
-
-    return plainToInstance(UserDto, user);
+    return plainToInstance(UserDto, userInDb);
   }
 
   @UseGuards(FirebaseAuthGuard)
-  @Get('profile/:id/list-post')
-  async getListPost(
-    @Param('id', ParseMongooseObjectID) userId: Types.ObjectId,
-  ) {
-    return await this.usersService.getListPostOfUser(userId);
+  @Get('profile/list-post')
+  async getListPost(@Req() { user: { uid } }: { user: DecodedIdToken }) {
+    return await this.usersService.getListPostOfUser(uid);
   }
 
   @UseGuards(FirebaseAuthGuard)
-  @Get('profile/:id/list-post-receive')
-  async getListPostReceive(
-    @Param('id', ParseMongooseObjectID) userId: Types.ObjectId,
-  ) {
-    return await this.usersService.getListPostReceiveOfUser(userId);
+  @Get('profile/list-post-receive')
+  async getListPostReceive(@Req() { user: { uid } }: { user: DecodedIdToken }) {
+    return await this.usersService.getListPostReceiveOfUser(uid);
   }
 
   @UseGuards(FirebaseAuthGuard)
   @Put('profile/update')
   async updateUser(@Req() req, @Body() updateUser: UpdateUserRequestDto) {
-    return await this.usersService.updateUser(req.user.id, updateUser);
+    return await this.usersService.updateUser(req.user.uid, updateUser);
   }
 
   @UseGuards(FirebaseAuthGuard)
@@ -115,5 +102,16 @@ export class UsersController {
     const userId = req.user.id;
 
     return await this.usersService.updateUser(userId, { avatar: avatarUrl });
+  }
+
+  @Get('profile/:id')
+  async getUserProfile(@Param('id', ParseMongooseObjectID) id: Types.ObjectId) {
+    const user = await this.usersService.getUserById(id);
+
+    if (!user) {
+      throw new NotFoundException("User's not found");
+    }
+
+    return plainToInstance(UserDto, user);
   }
 }

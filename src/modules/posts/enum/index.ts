@@ -1,7 +1,7 @@
 export enum EPostStatus {
   ACTIVE = 'active',
   CLOSE = 'close',
-  INPROGRESS = 'inprogress',
+  IS_RECEIVE = 'isReceive',
 }
 
 export enum ETypeOfWork {

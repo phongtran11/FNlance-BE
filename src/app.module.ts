@@ -13,10 +13,10 @@ import { PostsModule } from './modules/posts/posts.module';
       load: [configuration],
     }),
     createConnectionMongo(),
-    AuthModule,
-    UsersModule,
     FirebaseModule,
     PostsModule,
+    UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
