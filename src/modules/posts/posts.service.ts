@@ -6,21 +6,22 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
+
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
+import { Post } from 'src/database';
 import {
   CreatePostDto,
+  PostDto,
+  PaginateDto,
   FilterPostsDto,
   ListPostDto,
-  PostDto,
-} from 'src/modules/posts/dto';
-import { UsersService } from '../user/user.service';
-import { PaginateDto } from 'src/common/dto';
-import { Post } from './schema';
-import { TUserObjectMongoose } from '../user/types';
-import { EPostStatus } from './enum';
-import { TUpdateUserProp } from './types';
+} from 'src/dto';
+import { EPostStatus } from 'src/enums';
+import { TUserObjectMongoose, TUpdateUserProp } from 'src/types';
+
+import { UsersService } from '../user';
 
 @Injectable()
 export class PostsService {
@@ -72,7 +73,7 @@ export class PostsService {
 
       return plainToInstance(PostDto, newPost);
     } catch (error) {
-      this.errorException(error);
+      this.errorException(error, "Can't create post");
     }
   }
 
@@ -119,7 +120,7 @@ export class PostsService {
         limit,
       };
     } catch (error) {
-      this.errorException(error);
+      this.errorException(error, "Can't get list post");
     }
   }
 
@@ -130,7 +131,7 @@ export class PostsService {
         select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
       });
     } catch (error) {
-      this.errorException(error);
+      this.errorException(error, "Can't get post");
     }
   }
 
@@ -142,12 +143,12 @@ export class PostsService {
 
     const postsReceive = await this.getPostById(postId);
 
-    if (postsReceive.status === EPostStatus.IS_RECEIVE) {
+    if (postsReceive.status === EPostStatus.IS_RECEIVED) {
       throw new BadRequestException('Post was received ');
     }
 
     await this.updatePost(postsReceive.id, {
-      status: EPostStatus.IS_RECEIVE,
+      status: EPostStatus.IS_RECEIVED,
     });
 
     const userUpdate = await this.usersService.updateUser(user.firebaseId, {
@@ -172,13 +173,13 @@ export class PostsService {
         },
       );
     } catch (error) {
-      this.errorException(error);
+      this.errorException(error, "Can't update post");
     }
   }
 
-  private errorException(error: unknown) {
+  private errorException(error: unknown, message?: string) {
     console.log(new Date().toLocaleString());
     console.error(error);
-    throw new InternalServerErrorException();
+    throw new InternalServerErrorException(message);
   }
 }

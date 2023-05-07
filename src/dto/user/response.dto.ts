@@ -1,13 +1,6 @@
-import { Exclude, Expose } from 'class-transformer';
-import {
-  IsEmail,
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
 import { Types } from 'mongoose';
-import { EUserMajor } from '../enum';
+import { Exclude, Expose } from 'class-transformer';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 @Exclude()
 export class UserDto {
@@ -52,28 +45,4 @@ export class UserDto {
 
   @Expose()
   phoneNumber?: string;
-}
-
-export class GetUserByUidDTO {
-  @IsNotEmpty()
-  id: string;
-}
-
-export class UpdateUserRequestDto {
-  @IsOptional()
-  username: string;
-
-  @IsOptional()
-  address: string;
-
-  @IsOptional()
-  @IsEmail()
-  email: string;
-
-  @IsOptional()
-  @IsEnum(EUserMajor, { each: true })
-  major: EUserMajor[];
-
-  @IsOptional()
-  phoneNumber: string;
 }

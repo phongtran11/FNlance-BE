@@ -5,10 +5,3 @@ export const AuthErrorConstants = {
   ROLE_NOT_FOUND: 'The Role not found',
   USER_ROLE_NOT_FOUND: `The user's role not found`,
 };
-
-export class AuthError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AuthError';
-  }
-}

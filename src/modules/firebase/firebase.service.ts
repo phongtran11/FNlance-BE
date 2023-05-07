@@ -1,17 +1,13 @@
-import {
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import firebaseAdmin from 'firebase-admin';
 import { DecodedIdToken, UserRecord } from 'firebase-admin/lib/auth';
 
-import { configuration, TConfigService } from 'src/common/config';
+import { TConfigService, configuration } from 'src/config';
+import { EUserRoles } from 'src/enums';
+
 import { AuthErrorConstants } from '../auth';
-import { EUserRoles } from 'src/modules/user/enum';
 
 @Injectable()
 export class FirebaseService {
@@ -66,34 +62,20 @@ export class FirebaseService {
     uid: string,
     customClaim: { customRole: EUserRoles },
   ): Promise<void> {
-    try {
-      await this.admin.auth().setCustomUserClaims(uid, customClaim);
-    } catch (error) {
-      this.errorException(error);
-    }
+    await this.admin.auth().setCustomUserClaims(uid, customClaim);
   }
 
   public async verifyToken(token: string): Promise<DecodedIdToken> {
     try {
       return await this.admin.auth().verifyIdToken(token);
     } catch (error) {
-      console.error(new Date(), error);
+      console.log(new Date().toLocaleString());
+      console.log(error);
       throw new UnauthorizedException(AuthErrorConstants.TOKEN_EXPIRE);
     }
   }
 
   public async getUserByUid(uid: string): Promise<UserRecord> {
-    try {
-      const user = await this.admin.auth().getUser(uid);
-
-      return user;
-    } catch (error) {
-      this.errorException(error);
-    }
-  }
-
-  private errorException(error: unknown) {
-    console.log(new Date(), error);
-    throw new InternalServerErrorException();
+    return await this.admin.auth().getUser(uid);
   }
 }

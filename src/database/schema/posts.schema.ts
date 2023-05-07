@@ -1,13 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import {
-  EPayForm,
   EPostStatus,
   ETypeOfJob,
   ETypeOfServices,
   ETypeOfWork,
   EWorkingForm,
-} from '../enum';
+  EPayForm,
+} from 'src/enums';
 
 export type PostDocument = Post & Document;
 

@@ -1,22 +1,23 @@
 import {
+  IsNotEmpty,
+  IsString,
   IsArray,
+  IsNumber,
   IsDate,
   IsEnum,
-  IsNotEmpty,
-  IsNumber,
   IsOptional,
-  IsString,
 } from 'class-validator';
 import { Types } from 'mongoose';
-import { ToDateFormat } from 'src/common/decorators';
+
+import { ToDateFormat } from 'src/decorators';
 import {
+  ETypeOfJob,
+  ETypeOfWork,
+  ETypeOfServices,
+  EWorkingForm,
   EPayForm,
   EPostStatus,
-  ETypeOfJob,
-  ETypeOfServices,
-  ETypeOfWork,
-  EWorkingForm,
-} from '../enum';
+} from 'src/enums';
 
 export class CreatePostDto {
   @IsNotEmpty()

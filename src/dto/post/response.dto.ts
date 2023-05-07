@@ -1,14 +1,15 @@
 import { Exclude, Expose } from 'class-transformer';
 import { Types } from 'mongoose';
+
 import {
-  EPayForm,
   EPostStatus,
-  EStatusPostReceive,
   ETypeOfJob,
   ETypeOfServices,
   ETypeOfWork,
   EWorkingForm,
-} from '../enum';
+  EPayForm,
+  EStatusPostReceive,
+} from 'src/enums';
 
 @Exclude()
 class UserInPost {

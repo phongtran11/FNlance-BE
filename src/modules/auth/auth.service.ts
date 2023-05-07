@@ -8,6 +8,8 @@ export class AuthService {
     token = token.replace(new RegExp('bearer ', 'gmi'), '');
 
     if (!token) {
+      console.log(new Date().toLocaleString());
+      console.log('Auth Service');
       throw new BadRequestException(AuthErrorConstants.TOKEN_REQUIRE);
     }
 

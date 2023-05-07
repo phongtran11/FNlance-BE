@@ -1,5 +1,5 @@
 import { Types, Document } from 'mongoose';
-import { User } from '../user.schema';
+import { User } from 'src/database';
 
 export type TPropsUpdateUser = Partial<Record<keyof User, any | any[]>>;
 

@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  UnauthorizedException,
+  forwardRef,
+} from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-custom';
 
@@ -12,6 +17,7 @@ export class FirebaseAuthStrategy extends PassportStrategy(
   'firebase',
 ) {
   constructor(
+    @Inject(forwardRef(() => FirebaseService))
     private readonly firebaseService: FirebaseService,
     private readonly authService: AuthService,
   ) {
@@ -20,10 +26,6 @@ export class FirebaseAuthStrategy extends PassportStrategy(
 
   async validate(request: Request): Promise<any> {
     const token = this.authService.validateHeaderToken(request);
-
-    if (!token) {
-      throw new UnauthorizedException(AuthErrorConstants.TOKEN_REQUIRE);
-    }
 
     const user = await this.firebaseService.verifyToken(token);
 

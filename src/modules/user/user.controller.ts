@@ -12,26 +12,26 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-
-import { FirebaseAuthGuard } from '../auth/firebase.guard';
-import { UsersService } from './user.service';
-import { configuration, ParseMongooseObjectID } from 'src/common';
-import { Types } from 'mongoose';
-import { DecodedIdToken } from 'firebase-admin/auth';
-import { UpdateUserRequestDto, UserDto } from './dto';
-import { FirebaseService } from '../firebase';
-import { plainToInstance } from 'class-transformer';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { FileSizeValidationPipe } from '../../common/pipe/validateFilePipe.pipe';
-import { diskStorage } from 'multer';
-import * as path from 'path';
-import { PostsService } from '../posts/posts.service';
+import { plainToInstance } from 'class-transformer';
+import { DecodedIdToken } from 'firebase-admin/auth';
+import { Types } from 'mongoose';
+
+import { configuration } from 'src/config';
+import { UpdateUserDto, UserDto } from 'src/dto';
+import { FileSizeValidationPipe, ParseMongooseObjectID } from 'src/pipe';
+import { TRequestWithToken } from 'src/types';
+
+import { FirebaseAuthGuard } from '../auth';
+import { PostsService } from '../posts';
+
+import { UsersService } from './user.service';
+import { storageUploadHandle } from 'src/utils';
 
 @Controller('users')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly firebaseService: FirebaseService,
     private readonly postsService: PostsService,
   ) {}
 
@@ -42,15 +42,13 @@ export class UsersController {
     const userInDb = await this.usersService.getUserByUid(user.uid);
 
     if (!userInDb) {
-      const userInFirebase = await this.firebaseService.getUserByUid(user.uid);
-
       const newUser = await this.usersService.createUser({
-        email: userInFirebase.email,
-        password: userInFirebase.passwordSalt,
-        displayName: userInFirebase.displayName,
-        firebaseId: userInFirebase.uid,
-        avatar: userInFirebase.photoURL,
-        customClaims: userInFirebase.customClaims,
+        email: user.email,
+        password: user.passwordSalt,
+        displayName: user.displayName,
+        firebaseId: user.uid,
+        avatar: user.photoURL,
+        customClaims: user.customClaims,
       });
 
       return plainToInstance(UserDto, newUser);
@@ -69,7 +67,7 @@ export class UsersController {
 
   @UseGuards(FirebaseAuthGuard)
   @Get('profile/list-post-receive')
-  async getListPostReceive(@Req() { user: { uid } }: { user: DecodedIdToken }) {
+  async getListPostReceive(@Req() { user: { uid } }: TRequestWithToken) {
     const postsId = await this.usersService.getListPostReceiveOfUser(uid);
 
     const postPromise = postsId.map((post) => {
@@ -83,31 +81,19 @@ export class UsersController {
 
   @UseGuards(FirebaseAuthGuard)
   @Put('profile/update')
-  async updateUser(@Req() req, @Body() updateUser: UpdateUserRequestDto) {
+  async updateUser(
+    @Req() req: TRequestWithToken,
+    @Body() updateUser: UpdateUserDto,
+  ) {
     return await this.usersService.updateUser(req.user.uid, updateUser);
   }
 
   @UseGuards(FirebaseAuthGuard)
   @Post('profile/upload')
-  @UseInterceptors(
-    FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: './public/profile-images',
-        filename: (req, file, cb) => {
-          const filename: string =
-            path.parse(file.originalname).name.replace(/\s/g, '') +
-            Date.now() +
-            Math.round(Math.random() * 1e9);
-          const extension: string = path.parse(file.originalname).ext;
-
-          cb(null, `${filename}${extension}`);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('avatar', storageUploadHandle()))
   async uploadFile(
     @UploadedFile(FileSizeValidationPipe) file: Express.Multer.File,
-    @Req() req,
+    @Req() req: TRequestWithToken,
   ) {
     const baseUrl = configuration().baseUrl;
     const avatarUrl: string = baseUrl + file.path.replace('public/', '');
