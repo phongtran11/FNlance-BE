@@ -147,16 +147,16 @@ export class PostsService {
       throw new BadRequestException('Post was received ');
     }
 
-    await this.updatePost(postsReceive.id, {
+    const post = await this.updatePost(postsReceive.id, {
       status: EPostStatus.IS_RECEIVED,
     });
 
-    const userUpdate = await this.usersService.updateUser(user.firebaseId, {
+    await this.usersService.updateUser(user.firebaseId, {
       postsReceive: [...user.postsReceive, postId],
     });
 
-    return await userUpdate.populate({
-      path: 'postsReceive',
+    return await post.populate({
+      path: 'userId',
       select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
     });
   }
