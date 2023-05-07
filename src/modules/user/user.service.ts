@@ -70,7 +70,7 @@ export class UsersService {
         return [];
       }
 
-      return userPopulate;
+      return userPopulate.postsId;
     } catch (error) {
       this.errorException(error, 'Cant get list post of user');
     }

@@ -21,12 +21,12 @@ import { configuration } from 'src/config';
 import { UpdateUserDto, UserDto } from 'src/dto';
 import { FileSizeValidationPipe, ParseMongooseObjectID } from 'src/pipe';
 import { TRequestWithToken } from 'src/types';
+import { storageUploadHandle } from 'src/utils';
 
 import { FirebaseAuthGuard } from '../auth';
 import { PostsService } from '../posts';
 
 import { UsersService } from './user.service';
-import { storageUploadHandle } from 'src/utils';
 
 @Controller('users')
 export class UsersController {
