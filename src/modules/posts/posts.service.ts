@@ -83,7 +83,9 @@ export class PostsService {
   ): Promise<ListPostDto> {
     try {
       const filterTag = tag ? { tags: { $in: [tag] } } : {};
-      const searchTitle = titleSearch ? { title: { $regex: titleSearch } } : {};
+      const searchTitle = titleSearch
+        ? { title: { $regex: new RegExp(titleSearch, 'i') } }
+        : {};
       let filter = Object.assign(filterPosts, filterTag);
       filter = Object.assign(filter, searchTitle);
 
