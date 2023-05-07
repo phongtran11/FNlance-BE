@@ -4,14 +4,10 @@ import { UserDto } from './dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
 import { TPropsUpdateUser, TUserObjectMongoose } from './types';
-import { Post } from '../posts/schema';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectModel('User') private readonly userModel: Model<User>,
-    @InjectModel('Post') private readonly postModel: Model<Post>,
-  ) {}
+  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
 
   async createUser({
     email,
@@ -77,23 +73,7 @@ export class UsersService {
         return [];
       }
 
-      const postPromise = userPopulate.postsId.map((post) => {
-        return this.postModel.findById(post.id).populate({
-          path: 'userId',
-          select: [
-            'id',
-            'email',
-            'username',
-            'avatar',
-            'address',
-            'phoneNumber',
-          ],
-        });
-      });
-
-      const postsReceive = await Promise.all(postPromise);
-
-      return postsReceive;
+      return userPopulate;
     } catch (error) {
       console.log(new Date().toLocaleString());
       console.log(error);
@@ -105,28 +85,12 @@ export class UsersService {
       const userPopulate = await this.userModel
         .findOne({ firebaseId: uid })
         .populate('postsReceive');
-
+      console.log(userPopulate);
       if (userPopulate.postsReceive.length === 0) {
         return [];
       }
 
-      const postReceivePromise = userPopulate.postsReceive.map((post) => {
-        return this.postModel.findById(post.id).populate({
-          path: 'userId',
-          select: [
-            'id',
-            'email',
-            'username',
-            'avatar',
-            'address',
-            'phoneNumber',
-          ],
-        });
-      });
-
-      const postsReceive = await Promise.all(postReceivePromise);
-
-      return postsReceive;
+      return userPopulate.postsReceive;
     } catch (error) {
       console.log(new Date().toLocaleString());
       console.log(error);

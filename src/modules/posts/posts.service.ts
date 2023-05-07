@@ -154,7 +154,10 @@ export class PostsService {
       postsReceive: [...user.postsReceive, postId],
     });
 
-    return await userUpdate.populate('postsReceive');
+    return await userUpdate.populate({
+      path: 'postsReceive',
+      select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
+    });
   }
 
   async updatePost(_id: Types.ObjectId, updateProp: TUpdateUserProp) {

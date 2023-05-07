@@ -25,12 +25,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { FileSizeValidationPipe } from '../../common/pipe/validateFilePipe.pipe';
 import { diskStorage } from 'multer';
 import * as path from 'path';
+import { PostsService } from '../posts/posts.service';
 
 @Controller('users')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly firebaseService: FirebaseService,
+    private readonly postsService: PostsService,
   ) {}
 
   @UseGuards(FirebaseAuthGuard)
@@ -60,13 +62,23 @@ export class UsersController {
   @UseGuards(FirebaseAuthGuard)
   @Get('profile/list-post')
   async getListPost(@Req() { user: { uid } }: { user: DecodedIdToken }) {
-    return await this.usersService.getListPostOfUser(uid);
+    const postsOfUser = await this.usersService.getListPostOfUser(uid);
+
+    return postsOfUser;
   }
 
   @UseGuards(FirebaseAuthGuard)
   @Get('profile/list-post-receive')
   async getListPostReceive(@Req() { user: { uid } }: { user: DecodedIdToken }) {
-    return await this.usersService.getListPostReceiveOfUser(uid);
+    const postsId = await this.usersService.getListPostReceiveOfUser(uid);
+
+    const postPromise = postsId.map((post) => {
+      return this.postsService.getPostById(post._id);
+    });
+
+    const postsReceive = await Promise.all(postPromise);
+
+    return postsReceive;
   }
 
   @UseGuards(FirebaseAuthGuard)

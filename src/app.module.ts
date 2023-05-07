@@ -13,9 +13,9 @@ import { PostsModule } from './modules/posts/posts.module';
       load: [configuration],
     }),
     createConnectionMongo(),
-    FirebaseModule,
-    PostsModule,
     UsersModule,
+    PostsModule,
+    FirebaseModule,
     AuthModule,
   ],
 })
