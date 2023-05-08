@@ -13,14 +13,14 @@ export class UsersService {
   async createUser({
     email,
     password,
-    displayName,
+    username,
     firebaseId,
     avatar,
     customClaims,
   }: UserDto): Promise<TUserObjectMongoose> {
     try {
       const newUser = new this.userModel({
-        displayName,
+        username,
         password,
         email,
         firebaseId,
