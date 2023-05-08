@@ -10,13 +10,14 @@ import { plainToInstance } from 'class-transformer';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { Post } from 'src/database';
+import { Post, RequestsReceivePost } from 'src/database';
 import {
   CreatePostDto,
   PostDto,
   PaginateDto,
   FilterPostsDto,
   ListPostDto,
+  RequestReceivePostDto,
 } from 'src/dto';
 import { EPostStatus } from 'src/enums';
 import { TUserObjectMongoose, TUpdateUserProp } from 'src/types';
@@ -27,6 +28,8 @@ import { UsersService } from '../user';
 export class PostsService {
   constructor(
     @InjectModel('Post') private readonly postModel: Model<Post>,
+    @InjectModel('Request_receive_post')
+    private readonly requestReceivePostModel: Model<RequestsReceivePost>,
     @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
   ) {}
@@ -140,10 +143,13 @@ export class PostsService {
   async receivePost(
     postId: Types.ObjectId,
     firebaseId: string,
+    requestId: Types.ObjectId,
   ): Promise<TUserObjectMongoose> {
     const user = await this.usersService.getUserByUid(firebaseId);
 
     const postsReceive = await this.getPostById(postId);
+
+    const request = await this.requestReceivePostModel.findById(requestId._id);
 
     if (postsReceive.status === EPostStatus.IS_RECEIVED) {
       throw new BadRequestException('Post was received ');
@@ -151,6 +157,8 @@ export class PostsService {
 
     const post = await this.updatePost(postsReceive.id, {
       status: EPostStatus.IS_RECEIVED,
+      requestReceived: request ? request._id : null,
+      dateReceived: new Date(),
     });
 
     await this.usersService.updateUser(user.firebaseId, {
@@ -177,6 +185,54 @@ export class PostsService {
     } catch (error) {
       this.errorException(error, "Can't update post");
     }
+  }
+
+  async requestReceive(
+    postId: Types.ObjectId,
+    requestReceivePost: RequestReceivePostDto,
+  ) {
+    const request = await this.createRequestReceivePost(requestReceivePost);
+
+    await this.postModel.findOneAndUpdate(
+      { _id: postId },
+      {
+        $push: {
+          listRequest: request._id,
+        },
+      },
+      {
+        new: true,
+      },
+    );
+
+    return request;
+  }
+
+  async createRequestReceivePost({
+    uid,
+    ...requestReceivePost
+  }: RequestReceivePostDto) {
+    const user = await this.usersService.getUserByUid(uid);
+
+    const request = new this.requestReceivePostModel({
+      ...requestReceivePost,
+      userId: user ? user._id : null,
+    });
+
+    try {
+      await request.save();
+      return request;
+    } catch (err) {
+      this.errorException(err);
+    }
+    await request.save();
+  }
+
+  async getRequestReceivePost(receivePostId: Types.ObjectId) {
+    return await this.requestReceivePostModel.findById(receivePostId).populate({
+      path: 'userId',
+      select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
+    });
   }
 
   private errorException(error: unknown, message?: string) {

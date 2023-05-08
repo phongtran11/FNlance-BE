@@ -94,3 +94,24 @@ export class FilterPostsDto {
   @IsEnum(ETypeOfServices)
   typeOfServices?: ETypeOfServices;
 }
+
+export class RequestReceivePostDto {
+  @IsOptional()
+  uid?: string;
+
+  @IsString()
+  proposalSkill: string;
+
+  @IsString()
+  planImplement: string;
+
+  @IsNumber()
+  recommendCost: number;
+
+  @IsString()
+  phoneNumber: string;
+
+  @ToDateFormat()
+  @IsDate()
+  expectDateDone: Date;
+}

@@ -45,7 +45,7 @@ export class UsersController {
       const newUser = await this.usersService.createUser({
         email: user.email,
         password: user.passwordSalt,
-        displayName: user.displayName,
+        username: user.displayName,
         firebaseId: user.uid,
         avatar: user.photoURL,
         customClaims: user.customClaims,

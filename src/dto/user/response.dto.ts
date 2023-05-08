@@ -13,7 +13,7 @@ export class UserDto {
 
   @Expose()
   @IsOptional()
-  displayName?: string;
+  username?: string;
 
   @Expose()
   @IsOptional()

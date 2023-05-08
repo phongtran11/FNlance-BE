@@ -7,6 +7,7 @@ import {
   ETypeOfWork,
   EWorkingForm,
   EPayForm,
+  EStatusPostReceive,
 } from 'src/enums';
 
 export type PostDocument = Post & Document;
@@ -38,6 +39,9 @@ export class Post {
   @Prop({ type: String, default: EPostStatus.ACTIVE })
   status: EPostStatus;
 
+  @Prop({ type: String, default: EStatusPostReceive.PREPARE })
+  workingStatus: EStatusPostReceive;
+
   @Prop({ type: [String] })
   tags: string[];
 
@@ -49,6 +53,12 @@ export class Post {
 
   @Prop({ type: Date })
   expiredDay: Date;
+
+  @Prop({ type: Date })
+  dateReceived: Date;
+
+  @Prop({ type: Date })
+  dateFinished: Date;
 
   @Prop({ type: String, default: ETypeOfJob.DEVELOP_WEBSITE })
   typeOfJob: ETypeOfJob;
@@ -64,6 +74,12 @@ export class Post {
 
   @Prop({ type: String, default: EPayForm.MONTH })
   payForm: EPayForm;
+
+  @Prop({ type: [Types.ObjectId], ref: 'Request_receive_post' })
+  listRequest: Types.ObjectId[];
+
+  @Prop({ type: Types.ObjectId, ref: 'Request_receive_post' })
+  requestReceived: Types.ObjectId;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

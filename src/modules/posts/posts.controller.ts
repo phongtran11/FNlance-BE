@@ -13,12 +13,20 @@ import { Types } from 'mongoose';
 
 import { DecodedIdToken } from 'firebase-admin/auth';
 
-import { PaginateDto, FilterPostsDto, CreatePostDto, PostDto } from 'src/dto';
+import {
+  PaginateDto,
+  FilterPostsDto,
+  CreatePostDto,
+  PostDto,
+  RequestReceivePostDto,
+  PostDetailDto,
+} from 'src/dto';
 import { ParseMongooseObjectID } from 'src/pipe';
 
 import { FirebaseAuthGuard } from '../auth';
 
 import { PostsService } from './posts.service';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('posts')
 export class PostsController {
@@ -40,7 +48,20 @@ export class PostsController {
 
     if (!post) throw new NotFoundException("Post's not found");
 
-    return post;
+    const postPopulateListRequest = await post.populate('listRequest');
+
+    const mappingRequestsWithUser = postPopulateListRequest.listRequest.map(
+      (request) => this.postsService.getRequestReceivePost(request._id),
+    );
+
+    const listRequestPopulate = await Promise.all(mappingRequestsWithUser);
+
+    const { listRequest, ...postObject } = postPopulateListRequest.toObject();
+
+    return {
+      ...plainToInstance(PostDetailDto, postObject),
+      listRequest: listRequest ? listRequestPopulate : [],
+    };
   }
 
   @UseGuards(FirebaseAuthGuard)
@@ -54,7 +75,20 @@ export class PostsController {
   async receivePost(
     @Req() { user }: { user: DecodedIdToken },
     @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
+    @Body(ParseMongooseObjectID) requestReceivePost: Types.ObjectId,
   ) {
-    return await this.postsService.receivePost(postId, user.uid);
+    return await this.postsService.receivePost(
+      postId,
+      user.uid,
+      requestReceivePost,
+    );
+  }
+
+  @Post(':postId/request-receive')
+  async requestReceivePost(
+    @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
+    @Body() requestReceivePost: RequestReceivePostDto,
+  ) {
+    return await this.postsService.requestReceive(postId, requestReceivePost);
   }
 }

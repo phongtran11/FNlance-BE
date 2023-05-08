@@ -37,7 +37,7 @@ export enum EPayForm {
 }
 
 export enum EStatusPostReceive {
-  PICKED = 'picked',
+  PREPARE = 'prepare',
   INPROGRESS = 'inprogress',
   DONE = 'done',
 }

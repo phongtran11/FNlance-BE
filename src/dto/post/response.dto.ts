@@ -66,6 +66,21 @@ export class PostDto {
 
   @Expose()
   payForm: EPayForm;
+
+  @Expose()
+  workingStatus: EStatusPostReceive;
+
+  @Expose()
+  dateReceived: Date;
+
+  @Expose()
+  dateFinished: Date;
+
+  @Expose()
+  listRequest: Types.ObjectId[];
+
+  @Expose()
+  requestReceived: Types.ObjectId;
 }
 
 @Exclude()
@@ -102,4 +117,61 @@ export class PostReceiveDto {
 
   @Expose()
   statusPostReceive: EStatusPostReceive;
+}
+
+@Exclude()
+export class PostDetailDto {
+  @Expose()
+  id: Types.ObjectId;
+
+  @Expose()
+  userId: UserInPost;
+
+  @Expose()
+  title: string;
+
+  @Expose()
+  description: string;
+
+  @Expose()
+  tags: string[];
+
+  @Expose()
+  location: string;
+
+  @Expose()
+  expiredDay: Date;
+
+  @Expose()
+  budget: [number, number];
+
+  @Expose()
+  status: EPostStatus;
+
+  @Expose()
+  typeOfJob: ETypeOfJob;
+
+  @Expose()
+  typeOfServices: ETypeOfServices;
+
+  @Expose()
+  typeOfWork: ETypeOfWork;
+
+  @Expose()
+  workingForm: EWorkingForm;
+
+  @Expose()
+  payForm: EPayForm;
+
+  @Expose()
+  workingStatus: EStatusPostReceive;
+
+  @Expose()
+  dateReceived: Date;
+
+  @Expose()
+  dateFinished: Date;
+
+  @Expose()
+  requestReceived: Types.ObjectId;
 }

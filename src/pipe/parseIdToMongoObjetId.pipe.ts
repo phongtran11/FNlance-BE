@@ -2,9 +2,13 @@ import { PipeTransform, HttpStatus, HttpException } from '@nestjs/common';
 import { isValidObjectId, Types } from 'mongoose';
 
 export class ParseMongooseObjectID
-  implements PipeTransform<string, Types.ObjectId>
+  implements PipeTransform<any, Types.ObjectId>
 {
-  transform(value: string): Types.ObjectId {
+  transform(value: any): Types.ObjectId {
+    if (typeof value === 'object') {
+      value = value.id;
+    }
+
     if (!isValidObjectId(value)) {
       throw new HttpException(
         'Invalid mongodb object id',
