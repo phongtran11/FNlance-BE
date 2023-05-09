@@ -24,9 +24,6 @@ export class RequestsReceivePost {
   @Prop({ type: String })
   proposalSkill: string;
 
-  @Prop({ type: String })
-  planImplement: string;
-
   @Prop({ type: Number })
   recommendCost: number;
 

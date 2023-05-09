@@ -102,9 +102,6 @@ export class RequestReceivePostDto {
   @IsString()
   proposalSkill: string;
 
-  @IsString()
-  planImplement: string;
-
   @IsNumber()
   recommendCost: number;
 
