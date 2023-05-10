@@ -27,6 +27,7 @@ import { FirebaseAuthGuard } from '../auth';
 import { PostsService } from '../posts';
 
 import { UsersService } from './user.service';
+import { EPostStatus } from 'src/enums';
 
 @Controller('users')
 export class UsersController {
@@ -38,14 +39,16 @@ export class UsersController {
   @UseGuards(FirebaseAuthGuard)
   @Post('sign-in')
   @HttpCode(200)
-  public async signIn(@Req() { user }: { user: DecodedIdToken }) {
+  public async signIn(
+    @Req() { user }: { user: DecodedIdToken & { name?: string } },
+  ) {
     const userInDb = await this.usersService.getUserByUid(user.uid);
 
     if (!userInDb) {
       const newUser = await this.usersService.createUser({
         email: user.email,
         password: user.passwordSalt,
-        username: user.displayName,
+        username: user.displayName ?? user.name,
         firebaseId: user.uid,
         avatar: user.photoURL,
         customClaims: user.customClaims,
@@ -62,21 +65,56 @@ export class UsersController {
   async getListPost(@Req() { user: { uid } }: { user: DecodedIdToken }) {
     const postsOfUser = await this.usersService.getListPostOfUser(uid);
 
-    return postsOfUser;
+    return postsOfUser.sort(
+      (postbefore: any, postafter: any) =>
+        postafter.createdAt - postbefore.createdAt,
+    );
   }
 
   @UseGuards(FirebaseAuthGuard)
   @Get('profile/list-post-receive')
   async getListPostReceive(@Req() { user: { uid } }: TRequestWithToken) {
-    const postsId = await this.usersService.getListPostReceiveOfUser(uid);
+    const user = await this.usersService.getUserByUid(uid);
 
-    const postPromise = postsId.map((post) => {
-      return this.postsService.getPostById(post._id);
+    const posts = await this.postsService.getAllPost();
+
+    const postUserHaveRequest = posts.filter(
+      (post) =>
+        post.userReceived?.toString() === user._id.toString() &&
+        post.status === EPostStatus.IS_RECEIVED,
+    );
+
+    return postUserHaveRequest;
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Get('profile/list-post-request')
+  async getListPostRequest(@Req() { user: { uid } }: TRequestWithToken) {
+    const user = await this.usersService.getUserByUid(uid);
+
+    const posts = await this.postsService.getAllPost();
+
+    const listRequest = await this.postsService.getAllRequest();
+
+    const requestOfUser = listRequest.filter(
+      (req) => req.userId.toString() === user._id.toString(),
+    );
+
+    const postHaveRequest = posts.map((post) => {
+      let isReturn = false;
+      let myRequest;
+      for (const request of requestOfUser) {
+        myRequest = post.listRequest.find(
+          (req) => req._id.toString() === request._id.toString(),
+        );
+
+        if (myRequest) isReturn = true;
+      }
+
+      if (isReturn) return { post, myRequest };
     });
 
-    const postsReceive = await Promise.all(postPromise);
-
-    return postsReceive;
+    return postHaveRequest.filter(Boolean);
   }
 
   @UseGuards(FirebaseAuthGuard)

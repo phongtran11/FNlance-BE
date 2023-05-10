@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+import { Transform } from 'class-transformer';
 import {
   IsNotEmpty,
   IsString,
@@ -7,9 +9,9 @@ import {
   IsEnum,
   IsOptional,
 } from 'class-validator';
-import { Types } from 'mongoose';
+import { Types, isValidObjectId } from 'mongoose';
 
-import { ToDateFormat } from 'src/decorators';
+import { ToArrayFormat, ToDateFormat, ToMongoObjectId } from 'src/decorators';
 import {
   ETypeOfJob,
   ETypeOfWork,
@@ -17,6 +19,7 @@ import {
   EWorkingForm,
   EPayForm,
   EPostStatus,
+  EStatusPostReceive,
 } from 'src/enums';
 
 export class CreatePostDto {
@@ -111,4 +114,14 @@ export class RequestReceivePostDto {
   @ToDateFormat()
   @IsDate()
   expectDateDone: Date;
+}
+
+export class GetListPostOfferDto {
+  // Array id of post offer
+  @ToArrayFormat()
+  @IsArray()
+  arrayId: Types.ObjectId[];
+
+  @IsEnum(EStatusPostReceive)
+  status: EStatusPostReceive;
 }

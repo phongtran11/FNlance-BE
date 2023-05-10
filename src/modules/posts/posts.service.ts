@@ -18,9 +18,10 @@ import {
   FilterPostsDto,
   ListPostDto,
   RequestReceivePostDto,
+  GetListPostOfferDto,
 } from 'src/dto';
-import { EPostStatus } from 'src/enums';
-import { TUserObjectMongoose, TUpdateUserProp } from 'src/types';
+import { EPostStatus, EStatusPostReceive } from 'src/enums';
+import { TUpdateUserProp } from 'src/types';
 
 import { UsersService } from '../user';
 
@@ -144,31 +145,38 @@ export class PostsService {
     postId: Types.ObjectId,
     firebaseId: string,
     requestId: Types.ObjectId,
-  ): Promise<TUserObjectMongoose> {
+  ) {
     const user = await this.usersService.getUserByUid(firebaseId);
 
     const postsReceive = await this.getPostById(postId);
-
-    const request = await this.requestReceivePostModel.findById(requestId._id);
+    const request = await this.requestReceivePostModel.findById(requestId);
 
     if (postsReceive.status === EPostStatus.IS_RECEIVED) {
       throw new BadRequestException('Post was received ');
     }
 
+    // update post is received
     const post = await this.updatePost(postsReceive.id, {
       status: EPostStatus.IS_RECEIVED,
       requestReceived: request ? request._id : null,
+      userReceived: user._id,
       dateReceived: new Date(),
     });
 
+    // update post received in user
     await this.usersService.updateUser(user.firebaseId, {
       postsReceive: [...user.postsReceive, postId],
     });
 
-    return await post.populate({
+    // return post offer
+    const populateUser = await post.populate({
       path: 'userId',
       select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
     });
+
+    const populatePostReceived = await populateUser.populate('requestReceived');
+
+    return populatePostReceived;
   }
 
   async updatePost(_id: Types.ObjectId, updateProp: TUpdateUserProp) {
@@ -191,8 +199,20 @@ export class PostsService {
     postId: Types.ObjectId,
     requestReceivePost: RequestReceivePostDto,
   ) {
-    const request = await this.createRequestReceivePost(requestReceivePost);
+    const user = await this.usersService.getUserByUid(requestReceivePost.uid);
 
+    // update postSendOffer of User
+    await this.usersService.updateUser(requestReceivePost.uid, {
+      postSendOffer: [...user.postSendOffer, postId],
+    });
+
+    //  create PostSendOffer
+    const request = await this.createRequestReceivePost({
+      postId,
+      ...requestReceivePost,
+    });
+
+    // add postSendOffer to listRequest in post
     await this.postModel.findOneAndUpdate(
       { _id: postId },
       {
@@ -211,12 +231,12 @@ export class PostsService {
   async createRequestReceivePost({
     uid,
     ...requestReceivePost
-  }: RequestReceivePostDto) {
+  }: RequestReceivePostDto & { postId: Types.ObjectId }) {
     const user = await this.usersService.getUserByUid(uid);
 
     const request = new this.requestReceivePostModel({
       ...requestReceivePost,
-      userId: user ? user._id : null,
+      userId: user._id,
     });
 
     try {
@@ -233,6 +253,54 @@ export class PostsService {
       path: 'userId',
       select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
     });
+  }
+
+  async getListRequestReceiveDetail({ arrayId, status }: GetListPostOfferDto) {
+    const listQueryPromise = arrayId.map((id) => {
+      const filter =
+        status === EStatusPostReceive.ALL
+          ? {
+              _id: id,
+            }
+          : {
+              _id: id,
+              status,
+            };
+
+      return new Promise((resolve) => {
+        this.requestReceivePostModel
+          .findOne(filter)
+          .populate({
+            path: 'userId',
+            select: [
+              'id',
+              'email',
+              'username',
+              'avatar',
+              'address',
+              'phoneNumber',
+            ],
+          })
+          .then((data) => {
+            resolve(data);
+          });
+      });
+    });
+    const listPostOffer = await Promise.all(listQueryPromise);
+
+    return listPostOffer.filter(Boolean);
+  }
+
+  async getAllPostPopulateListRequest() {
+    return await this.postModel.find().populate('listRequest');
+  }
+
+  async getAllPost() {
+    return await this.postModel.find();
+  }
+
+  async getAllRequest() {
+    return await this.requestReceivePostModel.find();
   }
 
   private errorException(error: unknown, message?: string) {

@@ -30,6 +30,9 @@ export class Post {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   userId: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  userReceived: Types.ObjectId;
+
   @Prop({ type: String, trim: true })
   title: string;
 
@@ -39,7 +42,7 @@ export class Post {
   @Prop({ type: String, default: EPostStatus.ACTIVE })
   status: EPostStatus;
 
-  @Prop({ type: String, default: EStatusPostReceive.PREPARE })
+  @Prop({ type: String, default: EStatusPostReceive.PENDING })
   workingStatus: EStatusPostReceive;
 
   @Prop({ type: [String] })
