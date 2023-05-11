@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   forwardRef,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
@@ -22,8 +23,10 @@ import {
 } from 'src/dto';
 import { EPostStatus, EStatusPostReceive } from 'src/enums';
 import { TUpdateUserProp } from 'src/types';
+import { populateUser } from 'src/utils';
 
 import { UsersService } from '../user';
+import { PostRepository } from './posts.repository';
 
 @Injectable()
 export class PostsService {
@@ -33,6 +36,7 @@ export class PostsService {
     private readonly requestReceivePostModel: Model<RequestsReceivePost>,
     @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
+    private readonly postRepository: PostRepository,
   ) {}
 
   async createPost({
@@ -55,79 +59,66 @@ export class PostsService {
       throw new BadRequestException("UserId isn't exists");
     }
 
-    try {
-      const newPost = new this.postModel({
-        userId,
-        title,
-        description,
-        tags,
-        location,
-        budget: [budgetFrom, budgetTo],
-        expiredDay,
-        typeOfJob,
-        typeOfWork,
-        workingForm,
-        payForm,
-      });
-      await newPost.save();
+    const newPost = new this.postModel({
+      userId,
+      title,
+      description,
+      tags,
+      location,
+      budget: [budgetFrom, budgetTo],
+      expiredDay,
+      typeOfJob,
+      typeOfWork,
+      workingForm,
+      payForm,
+    });
 
-      await this.usersService.updateUser(user.firebaseId, {
-        postsId: [...user.postsId, newPost._id],
-      });
+    await newPost.save();
 
-      return plainToInstance(PostDto, newPost);
-    } catch (error) {
-      this.errorException(error, "Can't create post");
-    }
+    await this.usersService.updateUser(user.firebaseId, {
+      postsId: [...user.postsId, newPost._id],
+    });
+
+    Logger.log(newPost, 'PostServices_CreateUser');
+
+    return plainToInstance(PostDto, newPost);
   }
 
   async getListPost(
     { page, limit }: PaginateDto,
     { tag, titleSearch, ...filterPosts }: FilterPostsDto,
   ): Promise<ListPostDto> {
-    try {
-      const filterTag = tag ? { tags: { $in: [tag] } } : {};
-      const searchTitle = titleSearch
-        ? { title: { $regex: new RegExp(titleSearch, 'i') } }
-        : {};
-      let filter = Object.assign(filterPosts, filterTag);
-      filter = Object.assign(filter, searchTitle);
+    const filterTag = tag ? { tags: { $in: [tag] } } : {};
 
-      const posts = await this.postModel
-        .find(
-          filter,
-          {},
-          {
-            skip: (page - 1) * limit,
-            limit,
-          },
-        )
-        .populate({
-          path: 'userId',
-          select: [
-            'id',
-            'email',
-            'username',
-            'avatar',
-            'address',
-            'phoneNumber',
-          ],
-        });
+    const searchTitle = titleSearch
+      ? { title: { $regex: new RegExp(titleSearch, 'i') } }
+      : {};
 
-      const totalPost = await this.postModel.count(filter);
-      const totalPage =
-        Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
+    let filter = Object.assign(filterPosts, filterTag);
+    filter = Object.assign(filter, searchTitle);
 
-      return {
-        listPost: posts,
-        totalPost,
-        totalPage,
-        page,
+    const options = {
+      filter,
+      projection: {},
+      queryOptions: {
+        skip: (page - 1) * limit,
         limit,
-      };
-    } catch (error) {
-      this.errorException(error, "Can't get list post");
-    }
+      },
+    };
+
+    const posts = await this.postRepository.findPost(options, [populateUser()]);
+
+    const totalPost = await this.postRepository.countPost(filter);
+    const totalPage =
+      Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
+
+    return {
+      listPost: posts,
+      totalPost,
+      totalPage,
+      page,
+      limit,
+    };
   }
 
   async getPostById(_id: Types.ObjectId) {
@@ -159,7 +150,7 @@ export class PostsService {
     const post = await this.updatePost(postsReceive.id, {
       status: EPostStatus.IS_RECEIVED,
       requestReceived: request ? request._id : null,
-      userReceived: user._id,
+      userReceived: request.userId,
       dateReceived: new Date(),
     });
 
@@ -301,6 +292,10 @@ export class PostsService {
 
   async getAllRequest() {
     return await this.requestReceivePostModel.find();
+  }
+
+  async getPostByIdV2(id: Types.ObjectId) {
+    return await this.postRepository.findPostById(id, [populateUser()]);
   }
 
   private errorException(error: unknown, message?: string) {

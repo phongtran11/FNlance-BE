@@ -7,6 +7,7 @@ import { UsersModule } from '../user';
 
 import { PostsController } from './posts.controller';
 import { PostsService } from './posts.service';
+import { PostRepository } from './posts.repository';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { PostsService } from './posts.service';
     forwardRef(() => UsersModule),
   ],
   controllers: [PostsController],
-  providers: [PostsService],
+  providers: [PostsService, PostRepository],
   exports: [PostsService],
 })
 export class PostsModule {}

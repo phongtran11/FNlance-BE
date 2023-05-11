@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -53,9 +54,10 @@ export class UsersController {
         avatar: user.photoURL,
         customClaims: user.customClaims,
       });
-
+      Logger.log(newUser, 'UserController_SignIn_UserNotInDB');
       return plainToInstance(UserDto, newUser);
     }
+    Logger.log(userInDb, 'UserController_SignIn_UserInDB');
 
     return plainToInstance(UserDto, userInDb);
   }
@@ -149,6 +151,8 @@ export class UsersController {
     if (!user) {
       throw new NotFoundException("User's not found");
     }
+
+    Logger.log(user, 'UserController_GetProfile');
 
     return plainToInstance(UserDto, user);
   }

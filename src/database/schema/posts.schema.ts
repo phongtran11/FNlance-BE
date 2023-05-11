@@ -27,16 +27,16 @@ export type PostDocument = Post & Document;
   minimize: false,
 })
 export class Post {
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   userReceived: Types.ObjectId;
 
-  @Prop({ type: String, trim: true })
+  @Prop({ type: String, trim: true, required: true })
   title: string;
 
-  @Prop({ default: '', type: String, trim: true })
+  @Prop({ default: '', type: String, trim: true, required: true })
   description: string;
 
   @Prop({ type: String, default: EPostStatus.ACTIVE })
@@ -51,7 +51,7 @@ export class Post {
   @Prop({ type: String })
   location: string;
 
-  @Prop({ type: [Number] })
+  @Prop({ type: [Number], required: true })
   budget: [number, number];
 
   @Prop({ type: Date })

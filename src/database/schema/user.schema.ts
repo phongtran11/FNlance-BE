@@ -19,7 +19,7 @@ export type UserDocument = User & Document;
   minimize: false,
 })
 export class User {
-  @Prop({ type: String, unique: true })
+  @Prop({ type: String, unique: true, required: true })
   email: string;
 
   @Prop({ type: String })
@@ -28,7 +28,7 @@ export class User {
   @Prop({ type: String })
   username?: string;
 
-  @Prop({ type: String })
+  @Prop({ type: String, required: true })
   firebaseId: string;
 
   @Prop({ type: String })

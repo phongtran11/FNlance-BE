@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  InternalServerErrorException,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -27,19 +29,10 @@ import { ParseMongooseObjectID, ParseMongooseObjectIDToArray } from 'src/pipe';
 import { FirebaseAuthGuard } from '../auth';
 
 import { PostsService } from './posts.service';
-import { plainToInstance } from 'class-transformer';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
-
-  @Get('list')
-  async getListPost(
-    @Query() paginateDto: PaginateDto,
-    @Query() filterPosts: FilterPostsDto,
-  ) {
-    return await this.postsService.getListPost(paginateDto, filterPosts);
-  }
 
   @UseGuards(FirebaseAuthGuard)
   @Get('request-receive-detail')
@@ -53,7 +46,11 @@ export class PostsController {
   @UseGuards(FirebaseAuthGuard)
   @Post('create-post')
   async newPost(@Body() createPostRequest: CreatePostDto): Promise<PostDto> {
-    return await this.postsService.createPost(createPostRequest);
+    try {
+      return await this.postsService.createPost(createPostRequest);
+    } catch (error) {
+      this.errorException(error);
+    }
   }
 
   @UseGuards(FirebaseAuthGuard)
@@ -75,27 +72,32 @@ export class PostsController {
     return await this.postsService.requestReceive(postId, requestReceivePost);
   }
 
+  @Get('list')
+  async getListPost(
+    @Query() paginateDto: PaginateDto,
+    @Query() filterPosts: FilterPostsDto,
+  ) {
+    try {
+      return await this.postsService.getListPost(paginateDto, filterPosts);
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
   @Get(':postId')
   async getPost(
     @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
   ) {
-    const post = await this.postsService.getPostById(postId);
+    try {
+      return await this.postsService.getPostByIdV2(postId);
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
 
-    if (!post) throw new NotFoundException("Post's not found");
-
-    const postPopulateListRequest = await post.populate('listRequest');
-
-    const mappingRequestsWithUser = postPopulateListRequest.listRequest.map(
-      (request) => this.postsService.getRequestReceivePost(request._id),
-    );
-
-    const listRequestPopulate = await Promise.all(mappingRequestsWithUser);
-
-    const { listRequest, ...postObject } = postPopulateListRequest.toObject();
-
-    return {
-      ...plainToInstance(PostDetailDto, postObject),
-      listRequest: listRequest ? listRequestPopulate : [],
-    };
+  private errorException(error: unknown) {
+    Logger.error(`[Post Controller]: ${error}`);
+    console.error(error);
+    throw new InternalServerErrorException();
   }
 }
