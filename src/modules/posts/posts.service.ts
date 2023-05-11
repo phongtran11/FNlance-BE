@@ -295,7 +295,20 @@ export class PostsService {
   }
 
   async getPostByIdV2(id: Types.ObjectId) {
-    return await this.postRepository.findPostById(id, [populateUser()]);
+    const post = await this.postRepository.findPostById(id, [populateUser()]);
+
+    const listRequestPopulatedPromise = post.listRequest.map((req) =>
+      this.postRepository.findOfferRequestById(req._id),
+    );
+
+    const listRequestPopulated = await Promise.all(listRequestPopulatedPromise);
+
+    const postPopulateListRequest = {
+      ...post.toObject(),
+      listRequest: listRequestPopulated,
+    };
+
+    return postPopulateListRequest;
   }
 
   private errorException(error: unknown, message?: string) {

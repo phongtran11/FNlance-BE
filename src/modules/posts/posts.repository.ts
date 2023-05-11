@@ -15,10 +15,25 @@ export class PostRepository {
 
   async findPostById(_id: Types.ObjectId, populate?: PopulateOptions[]) {
     if (populate) {
-      return await this.postModel.findById<Post>(_id).populate(populate);
+      return await this.postModel.findById(_id).populate(populate);
     }
 
-    return await this.postModel.findById<Post>(_id);
+    return await this.postModel.findById(_id);
+  }
+
+  async findOfferRequestById(
+    _id: Types.ObjectId,
+    populate?: PopulateOptions[],
+  ) {
+    if (populate) {
+      return await this.requestReceivePostModel
+        .findById<RequestsReceivePost>(_id)
+        .populate(populate);
+    }
+
+    return await this.requestReceivePostModel.findById<RequestsReceivePost>(
+      _id,
+    );
   }
 
   async findPost(
