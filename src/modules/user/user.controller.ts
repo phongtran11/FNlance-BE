@@ -30,6 +30,7 @@ import { PostsService } from '../posts';
 
 import { UsersService } from './user.service';
 import { EPostStatus } from 'src/enums';
+import { PostDocument } from 'src/database';
 
 @Controller('users')
 export class UsersController {
@@ -124,8 +125,9 @@ export class UsersController {
     @Query() { page, limit }: PaginateDto,
   ) {
     const user = await this.usersService.getUserByUid(uid);
-
-    const posts = await this.postsService.getAllPost();
+    const userPopulated = await user.populate<{
+      postsSendOffer: PostDocument[];
+    }>('postsSendOffer');
 
     const listRequest = await this.postsService.getAllRequest();
 
@@ -133,19 +135,20 @@ export class UsersController {
       (req) => req.userId.toString() === user._id.toString(),
     );
 
-    const postHaveRequest = posts
+    const postHaveRequest = userPopulated.postsSendOffer
       .map((post) => {
         let isReturn = false;
         let myRequest;
-        for (const request of requestOfUser) {
-          myRequest = post.listRequest.find(
-            (req) => req._id.toString() === request._id.toString(),
-          );
 
-          if (myRequest) isReturn = true;
-        }
+        requestOfUser.forEach((req) => {
+          if (post.id === req.postId.toString()) {
+            isReturn = true;
+            myRequest = req;
+          }
+        });
 
-        if (isReturn) return { post, myRequest };
+        if (!isReturn) return null;
+        return { post, myRequest };
       })
       .filter(Boolean);
 

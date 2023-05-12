@@ -38,7 +38,7 @@ export class UserDto {
   postsReceive?: Types.ObjectId[];
 
   @Expose()
-  PostSendOffer?: Types.ObjectId[];
+  postsSendOffer?: Types.ObjectId[];
 
   @Expose()
   address?: string;

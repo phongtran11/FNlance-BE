@@ -44,7 +44,7 @@ export class User {
   postsReceive: Types.ObjectId[];
 
   @Prop({ type: [Types.ObjectId], ref: 'Post' })
-  postSendOffer: Types.ObjectId[];
+  postsSendOffer: Types.ObjectId[];
 
   @Prop({ type: String })
   address: string;

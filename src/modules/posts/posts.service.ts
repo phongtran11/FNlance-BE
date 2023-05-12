@@ -192,9 +192,21 @@ export class PostsService {
   ) {
     const user = await this.usersService.getUserByUid(requestReceivePost.uid);
 
+    // Detect is user send offer with this post
+    const post = await this.postModel
+      .findById(postId)
+      .populate<{ listRequest: RequestsReceivePost[] }>('listRequest');
+
+    const isUserHasRequestThisPost = post.listRequest.some(
+      (request) => request.userId.toString() === user._id.toString(),
+    );
+
+    if (isUserHasRequestThisPost)
+      throw new BadRequestException('You have requested offer for this post');
+
     // update postSendOffer of User
     await this.usersService.updateUser(requestReceivePost.uid, {
-      postSendOffer: [...user.postSendOffer, postId],
+      postsSendOffer: [...user.postsSendOffer, postId],
     });
 
     //  create PostSendOffer
@@ -283,7 +295,9 @@ export class PostsService {
   }
 
   async getAllPostPopulateListRequest() {
-    return await this.postModel.find().populate('listRequest');
+    return await this.postModel
+      .find()
+      .populate<{ listRequest: RequestsReceivePost[] }>('listRequest');
   }
 
   async getAllPost() {
