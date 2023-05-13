@@ -96,6 +96,13 @@ export class FilterPostsDto {
   @IsOptional()
   @IsEnum(ETypeOfServices)
   typeOfServices?: ETypeOfServices;
+
+  @IsOptional()
+  @IsEnum({
+    asc: 'asc',
+    desc: 'desc',
+  })
+  sortDate?: 'asc' | 'desc';
 }
 
 export class RequestReceivePostDto {

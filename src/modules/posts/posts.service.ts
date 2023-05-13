@@ -86,7 +86,7 @@ export class PostsService {
 
   async getListPost(
     { page, limit }: PaginateDto,
-    { tag, titleSearch, ...filterPosts }: FilterPostsDto,
+    { tag, titleSearch, sortDate, ...filterPosts }: FilterPostsDto,
   ): Promise<ListPostDto> {
     const filterTag = tag ? { tags: { $in: [tag] } } : {};
 
@@ -106,7 +106,9 @@ export class PostsService {
       },
     };
 
-    const posts = await this.postRepository.findPost(options, [populateUser()]);
+    const posts = await this.postRepository.findPost(options, sortDate, [
+      populateUser(),
+    ]);
 
     const totalPost = await this.postRepository.countPost(filter);
     const totalPage =
@@ -141,6 +143,17 @@ export class PostsService {
 
     const postsReceive = await this.getPostById(postId);
     const request = await this.requestReceivePostModel.findById(requestId);
+
+    await request.updateOne(
+      {
+        $set: {
+          status: EStatusPostReceive.ACCEPTED,
+        },
+      },
+      {
+        new: true,
+      },
+    );
 
     if (postsReceive.status === EPostStatus.IS_RECEIVED) {
       throw new BadRequestException('Post was received ');

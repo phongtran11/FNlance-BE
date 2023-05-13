@@ -21,7 +21,6 @@ import {
   CreatePostDto,
   PostDto,
   RequestReceivePostDto,
-  PostDetailDto,
   GetListPostOfferDto,
 } from 'src/dto';
 import { ParseMongooseObjectID, ParseMongooseObjectIDToArray } from 'src/pipe';

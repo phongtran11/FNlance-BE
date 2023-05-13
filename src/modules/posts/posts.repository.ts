@@ -38,12 +38,16 @@ export class PostRepository {
 
   async findPost(
     { filter, projection, queryOptions }: TOptionFilterFindMethod<Post>,
+    sortDate: 'asc' | 'desc',
     populate?: PopulateOptions[],
   ) {
     if (populate) {
       return await this.postModel
         .find<Post>(filter, projection, queryOptions)
-        .populate(populate);
+        .populate(populate)
+        .sort({
+          createdAt: sortDate ? sortDate : 'desc',
+        });
     }
 
     return await this.postModel.find<Post>(filter, projection, queryOptions);
