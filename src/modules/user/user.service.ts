@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { User } from 'src/database';
+import { PostDocument, User } from 'src/database';
 import { UserDto } from 'src/dto';
 import { TUserObjectMongoose, TPropsUpdateUser } from 'src/types';
 
@@ -64,7 +64,7 @@ export class UsersService {
     try {
       const userPopulate = await this.userModel
         .findOne({ firebaseId: uid })
-        .populate('postsId');
+        .populate<{ postsId: PostDocument[] }>('postsId');
 
       if (userPopulate.postsId.length === 0) {
         return [];

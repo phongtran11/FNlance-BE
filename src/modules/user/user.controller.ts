@@ -20,7 +20,7 @@ import { DecodedIdToken } from 'firebase-admin/auth';
 import { Types } from 'mongoose';
 
 import { configuration } from 'src/config';
-import { PaginateDto, UpdateUserDto, UserDto } from 'src/dto';
+import { PaginateDto, SortDateDto, UpdateUserDto, UserDto } from 'src/dto';
 import { FileSizeValidationPipe, ParseMongooseObjectID } from 'src/pipe';
 import { TRequestWithToken } from 'src/types';
 import { storageUploadHandle } from 'src/utils';
@@ -69,8 +69,24 @@ export class UsersController {
   async getListPost(
     @Req() { user: { uid } }: { user: DecodedIdToken },
     @Query() { page, limit }: PaginateDto,
+    @Query() { sortDate }: SortDateDto,
   ) {
     const postsOfUser = await this.usersService.getListPostOfUser(uid);
+
+    postsOfUser.sort((a, b) => {
+      if (sortDate === 'asc')
+        return (
+          new Date(a.toObject()?.createdAt).getTime() -
+          new Date(b.toObject()?.createdAt).getTime()
+        );
+
+      if (sortDate === 'desc') {
+        return (
+          new Date(b.toObject()?.createdAt).getTime() -
+          new Date(a.toObject()?.createdAt).getTime()
+        );
+      }
+    });
 
     const totalPost = postsOfUser.length;
     const totalPage =
@@ -92,10 +108,11 @@ export class UsersController {
   async getListPostReceive(
     @Req() { user: { uid } }: TRequestWithToken,
     @Query() { page, limit }: PaginateDto,
+    @Query() { sortDate }: SortDateDto,
   ) {
     const user = await this.usersService.getUserByUid(uid);
 
-    const posts = await this.postsService.getAllPost();
+    const posts = await this.postsService.getAllPost(sortDate);
 
     const postUserHaveRequest = posts.filter(
       (post) =>
@@ -123,6 +140,7 @@ export class UsersController {
   async getListPostRequest(
     @Req() { user: { uid } }: TRequestWithToken,
     @Query() { page, limit }: PaginateDto,
+    @Query() { sortDate }: SortDateDto,
   ) {
     const user = await this.usersService.getUserByUid(uid);
     const userPopulated = await user.populate<{
@@ -136,6 +154,17 @@ export class UsersController {
     );
 
     const postHaveRequest = userPopulated.postsSendOffer
+      .sort((a: any, b: any) => {
+        if (sortDate === 'asc')
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+
+        if (sortDate === 'desc')
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+      })
       .map((post) => {
         let isReturn = false;
         let myRequest;

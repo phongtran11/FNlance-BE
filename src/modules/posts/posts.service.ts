@@ -11,7 +11,11 @@ import { plainToInstance } from 'class-transformer';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { Post, RequestsReceivePost } from 'src/database';
+import {
+  Post,
+  RequestsReceivePost,
+  RequestsReceivePostSchema,
+} from 'src/database';
 import {
   CreatePostDto,
   PostDto,
@@ -313,12 +317,18 @@ export class PostsService {
       .populate<{ listRequest: RequestsReceivePost[] }>('listRequest');
   }
 
-  async getAllPost() {
+  async getAllPost(sortOrder?: 'asc' | 'desc') {
+    if (sortOrder) {
+      return await this.postModel.find().sort({
+        createdAt: sortOrder,
+      });
+    }
+
     return await this.postModel.find();
   }
 
   async getAllRequest() {
-    return await this.requestReceivePostModel.find();
+    return await this.requestReceivePostModel.find<RequestsReceivePostSchema>();
   }
 
   async getPostByIdV2(id: Types.ObjectId) {

@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Types, Document } from 'mongoose';
 import { EStatusPostReceive } from 'src/enums';
 
-export type RequestsReceivePostSchema = RequestsReceivePost & DocumentType;
+export type RequestsReceivePostSchema = RequestsReceivePost & Document;
 
 @Schema({
   toJSON: {
