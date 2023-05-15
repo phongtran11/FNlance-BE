@@ -42,3 +42,8 @@ export enum EStatusPostReceive {
   DONE = 'done',
   ALL = 'all',
 }
+
+export enum ESortDate {
+  ASC = 'asc',
+  DESC = 'desc',
+}

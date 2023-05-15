@@ -31,7 +31,7 @@ export class Post {
   userId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  userReceived: Types.ObjectId;
+  userReceived?: Types.ObjectId;
 
   @Prop({ type: String, trim: true, required: true })
   title: string;
@@ -40,10 +40,10 @@ export class Post {
   description: string;
 
   @Prop({ type: String, default: EPostStatus.ACTIVE })
-  status: EPostStatus;
+  status?: EPostStatus;
 
   @Prop({ type: String, default: EStatusPostReceive.PENDING })
-  workingStatus: EStatusPostReceive;
+  workingStatus?: EStatusPostReceive;
 
   @Prop({ type: [String] })
   tags: string[];
@@ -58,10 +58,10 @@ export class Post {
   expiredDay: Date;
 
   @Prop({ type: Date })
-  dateReceived: Date;
+  dateReceived?: Date;
 
   @Prop({ type: Date })
-  dateFinished: Date;
+  dateFinished?: Date;
 
   @Prop({ type: String, default: ETypeOfJob.DEVELOP_WEBSITE })
   typeOfJob: ETypeOfJob;
@@ -79,10 +79,10 @@ export class Post {
   payForm: EPayForm;
 
   @Prop({ type: [Types.ObjectId], ref: 'Request_receive_post' })
-  listRequest: Types.ObjectId[];
+  listRequest?: Types.ObjectId[];
 
   @Prop({ type: Types.ObjectId, ref: 'Request_receive_post' })
-  requestReceived: Types.ObjectId;
+  requestReceived?: Types.ObjectId;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

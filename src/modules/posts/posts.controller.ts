@@ -42,15 +42,29 @@ export class PostsController {
   //   return this.postsService.getListRequestReceiveDetail(getListPostOfferQuery);
   // }
 
-  // @UseGuards(FirebaseAuthGuard)
-  // @Post('create-post')
-  // async newPost(@Body() createPostRequest: CreatePostDto): Promise<PostDto> {
-  //   try {
-  //     return await this.postsService.createPost(createPostRequest);
-  //   } catch (error) {
-  //     this.errorException(error);
-  //   }
-  // }
+  @UseGuards(FirebaseAuthGuard)
+  @Post('create-post')
+  async newPost(@Body() createPostData: CreatePostDto) {
+    try {
+      return await this.postsService.createPost(createPostData);
+    } catch (error) {
+      Logger.error(error);
+      throw new InternalServerErrorException();
+    }
+  }
+
+  @Get('list')
+  async getListPost(
+    @Query() paginateDto: PaginateDto,
+    @Query() filterPosts: FilterPostsDto,
+  ) {
+    try {
+      return await this.postsService.getListPost(paginateDto, filterPosts);
+    } catch (error) {
+      Logger.error(error);
+      throw new InternalServerErrorException();
+    }
+  }
 
   // @UseGuards(FirebaseAuthGuard)
   // @Post(':postId/receive')
@@ -69,18 +83,6 @@ export class PostsController {
   //   @Body() requestReceivePost: RequestReceivePostDto,
   // ) {
   //   return await this.postsService.requestReceive(postId, requestReceivePost);
-  // }
-
-  // @Get('list')
-  // async getListPost(
-  //   @Query() paginateDto: PaginateDto,
-  //   @Query() filterPosts: FilterPostsDto,
-  // ) {
-  //   try {
-  //     return await this.postsService.getListPost(paginateDto, filterPosts);
-  //   } catch (error) {
-  //     this.errorException(error);
-  //   }
   // }
 
   // @Get(':postId')

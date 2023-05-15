@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, PopulateOptions, Types } from 'mongoose';
 
-import { Post, RequestsReceivePost } from 'src/database';
+import { Post, PostDocument, RequestsReceivePost } from 'src/database';
+import { ESortDate } from 'src/enums';
 import { TOptionFilterFindMethod } from 'src/types';
 
 @Injectable()
@@ -38,7 +39,7 @@ export class PostRepository {
 
   async findPost(
     { filter, projection, queryOptions }: TOptionFilterFindMethod<Post>,
-    sortDate: 'asc' | 'desc',
+    sortDate?: ESortDate,
     populate?: PopulateOptions[],
   ) {
     if (populate) {
@@ -46,14 +47,26 @@ export class PostRepository {
         .find<Post>(filter, projection, queryOptions)
         .populate(populate)
         .sort({
-          createdAt: sortDate ? sortDate : 'desc',
+          createdAt: sortDate ? sortDate : ESortDate.DESC,
         });
     }
 
-    return await this.postModel.find<Post>(filter, projection, queryOptions);
+    return await this.postModel
+      .find<Post>(filter, projection, queryOptions)
+      .sort({
+        createdAt: sortDate ? sortDate : ESortDate.DESC,
+      });
   }
 
   async countPost(filter: FilterQuery<Post>) {
     return await this.postModel.count(filter);
+  }
+
+  async createPost(createPostData: Post) {
+    const post: PostDocument = await this.postModel.create(createPostData);
+
+    await post.save();
+
+    return post;
   }
 }

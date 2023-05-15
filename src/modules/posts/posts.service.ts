@@ -35,97 +35,79 @@ import { PostRepository } from './posts.repository';
 @Injectable()
 export class PostsService {
   constructor(
-    @InjectModel('Post') private readonly postModel: Model<Post>,
-    @InjectModel('Request_receive_post')
-    private readonly requestReceivePostModel: Model<RequestsReceivePost>,
-    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
     private readonly postRepository: PostRepository,
   ) {}
 
-  // async createPost({
-  //   userId,
-  //   title,
-  //   description,
-  //   tags,
-  //   location,
-  //   budgetFrom,
-  //   budgetTo,
-  //   expiredDay,
-  //   typeOfJob,
-  //   typeOfWork,
-  //   workingForm,
-  //   payForm,
-  // }: CreatePostDto): Promise<PostDto> {
-  //   const user = await this.usersService.getUserById(userId);
+  async createPost({
+    budgetFrom,
+    budgetTo,
+    userId,
+    ...createPostData
+  }: CreatePostDto) {
+    const user = await this.usersService.getUserById(userId);
 
-  //   if (!user) {
-  //     throw new BadRequestException("UserId isn't exists");
-  //   }
+    if (!user) {
+      throw new BadRequestException("UserId isn't exists");
+    }
 
-  //   const newPost = new this.postModel({
-  //     userId,
-  //     title,
-  //     description,
-  //     tags,
-  //     location,
-  //     budget: [budgetFrom, budgetTo],
-  //     expiredDay,
-  //     typeOfJob,
-  //     typeOfWork,
-  //     workingForm,
-  //     payForm,
-  //   });
+    const newPost = await this.postRepository.createPost({
+      ...createPostData,
+      userId,
+      budget: [budgetFrom, budgetTo],
+    });
 
-  //   await newPost.save();
+    await this.usersService.updateUser(user.firebaseId, {
+      postsId: newPost._id,
+    });
 
-  //   await this.usersService.updateUser(user.firebaseId, {
-  //     postsId: [...user.postsId, newPost._id],
-  //   });
+    return newPost;
+  }
 
-  //   Logger.log(newPost, 'PostServices_CreateUser');
+  async getListPost(
+    { page, limit }: PaginateDto,
+    { tag, titleSearch, sortDate, ...filterPosts }: FilterPostsDto,
+  ): Promise<ListPostDto> {
+    const filterTag = tag ? { tags: { $in: tag } } : {};
 
-  //   return plainToInstance(PostDto, newPost);
-  // }
+    const searchTitle = titleSearch
+      ? { title: { $regex: new RegExp(titleSearch, 'i') } }
+      : {};
 
-  // async getListPost(
-  //   { page, limit }: PaginateDto,
-  //   { tag, titleSearch, sortDate, ...filterPosts }: FilterPostsDto,
-  // ): Promise<ListPostDto> {
-  //   const filterTag = tag ? { tags: { $in: [tag] } } : {};
+    let filter = Object.assign(filterPosts, filterTag);
+    filter = Object.assign(filter, searchTitle);
 
-  //   const searchTitle = titleSearch
-  //     ? { title: { $regex: new RegExp(titleSearch, 'i') } }
-  //     : {};
+    const options = {
+      filter,
+      projection: {},
+      queryOptions: {
+        skip: (page - 1) * limit,
+        limit,
+      },
+    };
 
-  //   let filter = Object.assign(filterPosts, filterTag);
-  //   filter = Object.assign(filter, searchTitle);
+    const posts = await this.postRepository.findPost(options, sortDate);
 
-  //   const options = {
-  //     filter,
-  //     projection: {},
-  //     queryOptions: {
-  //       skip: (page - 1) * limit,
-  //       limit,
-  //     },
-  //   };
+    const totalPost = await this.postRepository.countPost(filter);
+    const totalPage =
+      Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
 
-  //   const posts = await this.postRepository.findPost(options, sortDate, [
-  //     populateUser(),
-  //   ]);
+    Logger.log({
+      listPost: posts,
+      totalPost,
+      totalPage,
+      page,
+      limit,
+    });
 
-  //   const totalPost = await this.postRepository.countPost(filter);
-  //   const totalPage =
-  //     Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
-
-  //   return {
-  //     listPost: posts,
-  //     totalPost,
-  //     totalPage,
-  //     page,
-  //     limit,
-  //   };
-  // }
+    return {
+      listPost: posts,
+      totalPost,
+      totalPage,
+      page,
+      limit,
+    };
+  }
 
   // async getPostById(_id: Types.ObjectId) {
   //   try {

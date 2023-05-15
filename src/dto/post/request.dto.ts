@@ -20,6 +20,7 @@ import {
   EPayForm,
   EPostStatus,
   EStatusPostReceive,
+  ESortDate,
 } from 'src/enums';
 
 export class CreatePostDto {
@@ -56,7 +57,7 @@ export class CreatePostDto {
   typeOfWork: ETypeOfWork;
 
   @IsEnum(ETypeOfServices)
-  typeOfServices?: ETypeOfServices;
+  typeOfServices: ETypeOfServices;
 
   @IsEnum(EWorkingForm)
   workingForm: EWorkingForm;
@@ -68,7 +69,8 @@ export class CreatePostDto {
 
 export class FilterPostsDto {
   @IsOptional()
-  tag?: string;
+  @ToArrayFormat()
+  tag?: string[];
 
   @IsEnum(EPostStatus)
   @IsOptional()
@@ -98,11 +100,8 @@ export class FilterPostsDto {
   typeOfServices?: ETypeOfServices;
 
   @IsOptional()
-  @IsEnum({
-    asc: 'asc',
-    desc: 'desc',
-  })
-  sortDate?: 'asc' | 'desc';
+  @IsEnum(ESortDate)
+  sortDate?: ESortDate;
 }
 
 export class RequestReceivePostDto {

@@ -16,21 +16,17 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { plainToInstance } from 'class-transformer';
-import { DecodedIdToken } from 'firebase-admin/auth';
 import { Types } from 'mongoose';
 
 import { configuration } from 'src/config';
-import { PaginateDto, SortDateDto, UpdateUserDto, UserDto } from 'src/dto';
+import { UpdateUserDto, UserDto } from 'src/dto';
 import { FileSizeValidationPipe, ParseMongooseObjectID } from 'src/pipe';
 import { TRequestWithToken, TUserFromFirebase } from 'src/types';
 import { storageUploadHandle } from 'src/utils';
 
 import { FirebaseAuthGuard } from '../auth';
-import { PostsService } from '../posts';
 
 import { UsersService } from './user.service';
-import { EPostStatus } from 'src/enums';
-import { PostDocument } from 'src/database';
 import { Request } from 'express';
 
 @Controller('users')
@@ -68,13 +64,13 @@ export class UsersController {
 
   @UseGuards(FirebaseAuthGuard)
   @Patch('update')
-  @HttpCode(200)
+  @HttpCode(204)
   async updateUser(
     @Req() req: TRequestWithToken,
     @Body() updateUser: UpdateUserDto,
   ) {
     try {
-      return await this.usersService.updateUser(req.user.uid, updateUser);
+      await this.usersService.updateUser(req.user.uid, updateUser);
     } catch (error) {
       Logger.error(error);
       throw new InternalServerErrorException();
@@ -83,7 +79,7 @@ export class UsersController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post('upload')
-  @HttpCode(201)
+  @HttpCode(204)
   @UseInterceptors(FileInterceptor('avatar', storageUploadHandle))
   async uploadFile(
     @UploadedFile(FileSizeValidationPipe) file: Express.Multer.File,
@@ -92,7 +88,8 @@ export class UsersController {
     try {
       const avatarUrl: string =
         configuration().baseUrl + file.path.replace('public/', '');
-      return await this.usersService.updateUser(user.uid, {
+
+      await this.usersService.updateUser(user.uid, {
         avatar: avatarUrl,
       });
     } catch (error) {
