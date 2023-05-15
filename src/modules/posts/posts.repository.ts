@@ -14,12 +14,12 @@ export class PostRepository {
     private readonly requestReceivePostModel: Model<RequestsReceivePost>,
   ) {}
 
-  async findPostById(_id: Types.ObjectId, populate?: PopulateOptions[]) {
+  async findPostById<T>(_id: Types.ObjectId, populate?: PopulateOptions[]) {
     if (populate) {
-      return await this.postModel.findById(_id).populate(populate);
+      return await this.postModel.findById(_id).populate<T>(populate);
     }
 
-    return await this.postModel.findById(_id);
+    return await this.postModel.findById<PostDocument>(_id);
   }
 
   async findOfferRequestById(

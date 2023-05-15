@@ -66,6 +66,18 @@ export class PostsController {
     }
   }
 
+  @Get(':postId')
+  async getPost(
+    @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
+  ) {
+    try {
+      return await this.postsService.getPostById(postId);
+    } catch (error) {
+      Logger.error(error);
+      throw new InternalServerErrorException();
+    }
+  }
+
   // @UseGuards(FirebaseAuthGuard)
   // @Post(':postId/receive')
   // async receivePost(
@@ -83,17 +95,6 @@ export class PostsController {
   //   @Body() requestReceivePost: RequestReceivePostDto,
   // ) {
   //   return await this.postsService.requestReceive(postId, requestReceivePost);
-  // }
-
-  // @Get(':postId')
-  // async getPost(
-  //   @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
-  // ) {
-  //   try {
-  //     return await this.postsService.getPostByIdV2(postId);
-  //   } catch (error) {
-  //     this.errorException(error);
-  //   }
   // }
 
   // private errorException(error: unknown) {

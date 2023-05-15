@@ -15,6 +15,7 @@ import {
   Post,
   RequestsReceivePost,
   RequestsReceivePostSchema,
+  UserDocument,
 } from 'src/database';
 import {
   CreatePostDto,
@@ -61,6 +62,8 @@ export class PostsService {
       postsId: newPost._id,
     });
 
+    Logger.log(newPost, 'PostService_CreatePost');
+
     return newPost;
   }
 
@@ -92,13 +95,16 @@ export class PostsService {
     const totalPage =
       Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
 
-    Logger.log({
-      listPost: posts,
-      totalPost,
-      totalPage,
-      page,
-      limit,
-    });
+    Logger.log(
+      {
+        listPost: posts,
+        totalPost,
+        totalPage,
+        page,
+        limit,
+      },
+      'PostService_GetListPost',
+    );
 
     return {
       listPost: posts,
@@ -107,6 +113,16 @@ export class PostsService {
       page,
       limit,
     };
+  }
+
+  async getPostById(id: Types.ObjectId) {
+    const post = await this.postRepository.findPostById<{
+      userId: UserDocument;
+    }>(id, [populateUser()]);
+
+    Logger.log(post, 'PostService_GetPostById');
+
+    return post;
   }
 
   // async getPostById(_id: Types.ObjectId) {
@@ -311,23 +327,6 @@ export class PostsService {
 
   // async getAllRequest() {
   //   return await this.requestReceivePostModel.find<RequestsReceivePostSchema>();
-  // }
-
-  // async getPostByIdV2(id: Types.ObjectId) {
-  //   const post = await this.postRepository.findPostById(id, [populateUser()]);
-
-  //   const listRequestPopulatedPromise = post.listRequest.map((req) =>
-  //     this.postRepository.findOfferRequestById(req._id),
-  //   );
-
-  //   const listRequestPopulated = await Promise.all(listRequestPopulatedPromise);
-
-  //   const postPopulateListRequest = {
-  //     ...post.toObject(),
-  //     listRequest: listRequestPopulated,
-  //   };
-
-  //   return postPopulateListRequest;
   // }
 
   // private errorException(error: unknown, message?: string) {
