@@ -15,7 +15,7 @@ import { PostRepository } from './posts.repository';
       { name: 'Post', schema: PostSchema },
       { name: 'Request_receive_post', schema: RequestsReceivePostSchema },
     ]),
-    forwardRef(() => UsersModule),
+    UsersModule,
   ],
   controllers: [PostsController],
   providers: [PostsService, PostRepository],

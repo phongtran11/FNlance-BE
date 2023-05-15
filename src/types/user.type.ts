@@ -1,3 +1,4 @@
+import { DecodedIdToken } from 'firebase-admin/auth';
 import { Types, Document } from 'mongoose';
 import { User } from 'src/database';
 
@@ -10,3 +11,5 @@ export type TUserObjectMongoose = Document<unknown, object, User> &
     },
     never
   >;
+
+export type TUserFromFirebase = DecodedIdToken & { name: string };

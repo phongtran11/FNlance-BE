@@ -1,101 +1,132 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, UpdateQuery } from 'mongoose';
 
-import { PostDocument, User } from 'src/database';
+import { PostDocument, User, UserDocument } from 'src/database';
 import { UserDto } from 'src/dto';
-import { TUserObjectMongoose, TPropsUpdateUser } from 'src/types';
+import {
+  TUserObjectMongoose,
+  TPropsUpdateUser,
+  TUserFromFirebase,
+} from 'src/types';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
-  async createUser({
-    email,
-    password,
-    username,
-    firebaseId,
-    avatar,
-    customClaims,
-  }: UserDto): Promise<TUserObjectMongoose> {
-    try {
-      const newUser = new this.userModel({
-        username,
-        password,
-        email,
-        firebaseId,
-        avatar,
-        customClaims,
-      });
-      await newUser.save();
+  async createUser(user: TUserFromFirebase) {
+    const userInDb = await this.getUserByUid(user.uid);
 
+    if (!userInDb) {
+      const newUser = await this.userRepository.createUser(user);
+      Logger.log(newUser, 'UserService_CreateUser_UserNotInDb');
       return newUser;
-    } catch (error) {
-      this.errorException(error, 'Cant create user');
     }
+
+    Logger.log(userInDb, 'UserService_CreateUser_UserInDB');
+
+    return userInDb;
   }
 
-  async getUserByUid(uid: string): Promise<TUserObjectMongoose> {
-    return await this.userModel.findOne({ firebaseId: uid });
+  async getUserByUid(uid: string) {
+    const user = await this.userRepository.findByUid(uid);
+
+    Logger.log(user, 'UserService_GetUserByUid');
+
+    return user;
   }
 
-  async getUserById(id: Types.ObjectId): Promise<TUserObjectMongoose> {
-    return await this.userModel.findOne({ _id: id });
+  async getUserById(id: Types.ObjectId) {
+    const user = await this.userRepository.findById(id);
+
+    Logger.log(user, 'UserService_GetUserById');
+
+    return user;
   }
 
-  async updateUser(
-    uid: string,
-    propsUpdate: TPropsUpdateUser,
-  ): Promise<TUserObjectMongoose> {
-    try {
-      return await this.userModel.findOneAndUpdate(
-        { firebaseId: uid },
-        { $set: propsUpdate },
-        {
-          new: true,
-        },
-      );
-    } catch (error) {
-      this.errorException(error, 'Cant update user');
-    }
-  }
+  async updateUser(uid: string, updateUserData: Partial<User>) {
+    const updateData = {
+      $set: {},
+      $push: {},
+    };
 
-  async getListPostOfUser(uid: string) {
-    try {
-      const userPopulate = await this.userModel
-        .findOne({ firebaseId: uid })
-        .populate<{ postsId: PostDocument[] }>('postsId');
-
-      if (userPopulate.postsId.length === 0) {
-        return [];
+    for (const [key, value] of Object.entries(updateUserData)) {
+      if (Array.isArray(value)) {
+        updateData.$push = { ...updateData.$push, [key]: value };
+      } else {
+        updateData.$set = { ...updateData.$set, [key]: value };
       }
-
-      return userPopulate.postsId;
-    } catch (error) {
-      this.errorException(error, 'Cant get list post of user');
     }
+
+    const userUpdated = await this.userRepository.updateUser(uid, updateData);
+
+    Logger.log(userUpdated, 'UserService_UpdateUser');
+
+    return userUpdated;
   }
 
-  async getListPostReceiveOfUser(firebaseId: string) {
-    try {
-      const userPopulate = await this.userModel
-        .findOne({ firebaseId })
-        .populate('postsReceive');
+  // async getUserById(id: Types.ObjectId): Promise<TUserObjectMongoose> {
+  //   return await this.userModel.findOne({ _id: id });
+  // }
 
-      if (userPopulate.postsReceive.length === 0) {
-        return [];
-      }
+  // async updateUser(
+  //   uid: string,
+  //   propsUpdate: TPropsUpdateUser,
+  // ): Promise<TUserObjectMongoose> {
+  //   try {
+  //     return await this.userModel.findOneAndUpdate(
+  //       { firebaseId: uid },
+  //       { $set: propsUpdate },
+  //       {
+  //         new: true,
+  //       },
+  //     );
+  //   } catch (error) {
+  //     this.errorException(error, 'Cant update user');
+  //   }
+  // }
 
-      return userPopulate.postsReceive;
-    } catch (error) {
-      this.errorException(error, 'Cant get list post, user have received');
-    }
-  }
+  // async getListPostOfUser(uid: string) {
+  //   try {
+  //     const userPopulate = await this.userModel
+  //       .findOne({ firebaseId: uid })
+  //       .populate<{ postsId: PostDocument[] }>('postsId');
 
-  private errorException(error, message?: string) {
-    console.log(new Date().toLocaleString());
-    console.log(error);
+  //     if (userPopulate.postsId.length === 0) {
+  //       return [];
+  //     }
 
-    throw new InternalServerErrorException(message);
-  }
+  //     return userPopulate.postsId;
+  //   } catch (error) {
+  //     this.errorException(error, 'Cant get list post of user');
+  //   }
+  // }
+
+  // async getListPostReceiveOfUser(firebaseId: string) {
+  //   try {
+  //     const userPopulate = await this.userModel
+  //       .findOne({ firebaseId })
+  //       .populate('postsReceive');
+
+  //     if (userPopulate.postsReceive.length === 0) {
+  //       return [];
+  //     }
+
+  //     return userPopulate.postsReceive;
+  //   } catch (error) {
+  //     this.errorException(error, 'Cant get list post, user have received');
+  //   }
+  // }
+
+  // private errorException(error, message?: string) {
+  //   console.log(new Date().toLocaleString());
+  //   console.log(error);
+
+  //   throw new InternalServerErrorException(message);
+  // }
 }

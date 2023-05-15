@@ -1,6 +1,5 @@
 import { Types } from 'mongoose';
 import { Exclude, Expose } from 'class-transformer';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 @Exclude()
 export class UserDto {
@@ -8,27 +7,21 @@ export class UserDto {
   id?: Types.ObjectId;
 
   @Expose()
-  @IsEmail()
   email: string;
 
   @Expose()
-  @IsOptional()
   username?: string;
 
   @Expose()
-  @IsOptional()
   password?: string;
 
   @Expose()
-  @IsString()
   firebaseId: string;
 
   @Expose()
-  @IsString()
   avatar: string;
 
   @Expose()
-  @IsOptional()
   customClaims?: Record<string, any>;
 
   @Expose()
