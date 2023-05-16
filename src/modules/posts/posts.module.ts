@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { PostSchema, RequestsReceivePostSchema } from 'src/database';
+import { PostSchema, RequestsReceivePostDocument } from 'src/database';
 
 import { UsersModule } from '../user';
 

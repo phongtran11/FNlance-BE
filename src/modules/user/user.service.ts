@@ -52,12 +52,15 @@ export class UsersService {
   async updateUser(uid: string, updateUserData: Partial<User>) {
     const updateData = {
       $set: {},
-      $push: {},
+      $addToSet: {},
     };
 
     for (const [key, value] of Object.entries(updateUserData)) {
       if (Array.isArray(value)) {
-        updateData.$push = { ...updateData.$push, [key]: value };
+        updateData.$addToSet = {
+          ...updateData.$addToSet,
+          [key]: { $each: value },
+        };
       } else {
         updateData.$set = { ...updateData.$set, [key]: value };
       }

@@ -33,12 +33,12 @@ export class UserRepository {
     return await this.userModel.findById<UserDocument>(id);
   }
 
-  async updateUser(firebaseId: string, { $set, $push }: UpdateQuery<User>) {
+  async updateUser(firebaseId: string, { $set, $addToSet }: UpdateQuery<User>) {
     return await this.userModel.findOneAndUpdate<UserDocument>(
       { firebaseId },
       {
         $set: $set ? $set : {},
-        $push: $push ? $push : {},
+        $addToSet: $addToSet ? $addToSet : {},
       },
       { new: true },
     );

@@ -14,7 +14,7 @@ import { Model, Types } from 'mongoose';
 import {
   Post,
   RequestsReceivePost,
-  RequestsReceivePostSchema,
+  RequestsReceivePostDocument,
   UserDocument,
 } from 'src/database';
 import {
@@ -125,16 +125,41 @@ export class PostsService {
     return post;
   }
 
-  // async getPostById(_id: Types.ObjectId) {
-  //   try {
-  //     return await this.postModel.findById(_id).populate({
-  //       path: 'userId',
-  //       select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
-  //     });
-  //   } catch (error) {
-  //     this.errorException(error, "Can't get post");
-  //   }
-  // }
+  async receivePost(
+    postId: Types.ObjectId,
+    requestId: Types.ObjectId,
+    firebaseId: string,
+  ) {
+    const postsReceive = await this.getPostById(postId);
+    const request = await this.postRepository.findOfferRequestById(requestId);
+
+    if (postsReceive.status === EPostStatus.IS_RECEIVED)
+      throw new BadRequestException('Post was receive');
+
+    // update request
+    const postUpdated = await this.postRepository.updatePost(request._id, {
+      status: EPostStatus.IS_RECEIVED,
+      requestReceived: request ? request._id : null,
+      userReceived: request.userId,
+      dateReceived: new Date(),
+    });
+
+    // update post received in user
+    const user = await this.usersService.getUserByUid(firebaseId);
+    await this.usersService.updateUser(user.firebaseId, {
+      postsReceive: [postId],
+    });
+
+    //   // return post offer
+    //   const populateUser = await post.populate({
+    //     path: 'userId',
+    //     select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
+    //   });
+
+    //   const populatePostReceived = await populateUser.populate('requestReceived');
+
+    //   return populatePostReceived;
+  }
 
   // async receivePost(
   //   postId: Types.ObjectId,

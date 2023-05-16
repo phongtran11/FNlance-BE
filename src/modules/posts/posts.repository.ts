@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, PopulateOptions, Types } from 'mongoose';
 
-import { Post, PostDocument, RequestsReceivePost } from 'src/database';
+import {
+  Post,
+  PostDocument,
+  RequestsReceivePost,
+  RequestsReceivePostDocument,
+} from 'src/database';
 import { ESortDate } from 'src/enums';
 import { TOptionFilterFindMethod } from 'src/types';
 
@@ -28,11 +33,11 @@ export class PostRepository {
   ) {
     if (populate) {
       return await this.requestReceivePostModel
-        .findById<RequestsReceivePost>(_id)
+        .findById<RequestsReceivePostDocument>(_id)
         .populate(populate);
     }
 
-    return await this.requestReceivePostModel.findById<RequestsReceivePost>(
+    return await this.requestReceivePostModel.findById<RequestsReceivePostDocument>(
       _id,
     );
   }
@@ -68,5 +73,15 @@ export class PostRepository {
     await post.save();
 
     return post;
+  }
+
+  async updatePost(postId: Types.ObjectId, postUpdate: Partial<Post>) {
+    return await this.requestReceivePostModel.findOneAndUpdate<PostDocument>(
+      { _id: postId },
+      postUpdate,
+      {
+        new: true,
+      },
+    );
   }
 }
