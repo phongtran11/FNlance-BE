@@ -1,5 +1,6 @@
 import { IsEnum, IsOptional } from 'class-validator';
 import { ToNumberFormat } from 'src/decorators';
+import { ESortDate } from 'src/enums';
 
 export class PaginateDto {
   @IsOptional()
@@ -13,9 +14,6 @@ export class PaginateDto {
 
 export class SortDateDto {
   @IsOptional()
-  @IsEnum({
-    asc: 'asc',
-    desc: 'desc',
-  })
-  sortDate?: 'asc' | 'desc' = 'asc';
+  @IsEnum(ESortDate)
+  sortDate?: ESortDate;
 }

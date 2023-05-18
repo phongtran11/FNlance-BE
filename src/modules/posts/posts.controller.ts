@@ -4,7 +4,6 @@ import {
   Get,
   InternalServerErrorException,
   Logger,
-  NotFoundException,
   Param,
   Post,
   Query,
@@ -19,28 +18,20 @@ import {
   PaginateDto,
   FilterPostsDto,
   CreatePostDto,
-  PostDto,
   RequestReceivePostDto,
   GetListPostOfferDto,
+  SortDateDto,
 } from 'src/dto';
 import { ParseMongooseObjectID, ParseMongooseObjectIDToArray } from 'src/pipe';
 
 import { FirebaseAuthGuard } from '../auth';
 
 import { PostsService } from './posts.service';
+import { TRequestWithToken } from 'src/types';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
-
-  // @UseGuards(FirebaseAuthGuard)
-  // @Get('request-receive-detail')
-  // async getRequestReceiveDetail(
-  //   @Query(ParseMongooseObjectIDToArray)
-  //   getListPostOfferQuery: GetListPostOfferDto,
-  // ) {
-  //   return this.postsService.getListRequestReceiveDetail(getListPostOfferQuery);
-  // }
 
   @UseGuards(FirebaseAuthGuard)
   @Post('create-post')
@@ -48,8 +39,7 @@ export class PostsController {
     try {
       return await this.postsService.createPost(createPostData);
     } catch (error) {
-      Logger.error(error);
-      throw new InternalServerErrorException();
+      this.errorException(error);
     }
   }
 
@@ -61,8 +51,56 @@ export class PostsController {
     try {
       return await this.postsService.getListPost(paginateDto, filterPosts);
     } catch (error) {
-      Logger.error(error);
-      throw new InternalServerErrorException();
+      this.errorException(error);
+    }
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Get('list/user-posted')
+  async getListUserPosted(
+    @Req() { user: { uid } }: TRequestWithToken,
+    @Query() paginateDto: PaginateDto,
+    @Query() sortDateDto: SortDateDto,
+  ) {
+    try {
+      return await this.postsService.getListUserPosted(
+        uid,
+        paginateDto,
+        sortDateDto,
+      );
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Get('list/posts-user-sent-offer')
+  async getListUserSent(
+    @Req() { user: { uid } }: TRequestWithToken,
+    @Query() paginateDto: PaginateDto,
+    @Query() sortDateDto: SortDateDto,
+  ) {
+    try {
+      return await this.postsService.getListPostUserSentOffer(
+        uid,
+        paginateDto,
+        sortDateDto,
+      );
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Get('offer-detail')
+  async getRequestReceiveDetail(
+    @Query(ParseMongooseObjectIDToArray)
+    getListPostOfferQuery: GetListPostOfferDto,
+  ) {
+    try {
+      return await this.postsService.getOffersDetail(getListPostOfferQuery);
+    } catch (error) {
+      this.errorException(error);
     }
   }
 
@@ -73,33 +111,40 @@ export class PostsController {
     try {
       return await this.postsService.getPostById(postId);
     } catch (error) {
-      Logger.error(error);
-      throw new InternalServerErrorException();
+      this.errorException(error);
     }
   }
 
-  // @UseGuards(FirebaseAuthGuard)
-  // @Post(':postId/receive')
-  // async receivePost(
-  //   @Req() { user }: { user: DecodedIdToken },
-  //   @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
-  //   @Body('requestId', ParseMongooseObjectID) requestId: Types.ObjectId,
-  // ) {
-  //   return await this.postsService.receivePost(postId, user.uid, requestId);
-  // }
+  @UseGuards(FirebaseAuthGuard)
+  @Post(':postId/receive')
+  async receivePost(
+    @Req() { user }: { user: DecodedIdToken },
+    @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
+    @Body('requestId', ParseMongooseObjectID) requestId: Types.ObjectId,
+  ) {
+    try {
+      return await this.postsService.receivePost(postId, requestId, user.uid);
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
 
-  // @UseGuards(FirebaseAuthGuard)
-  // @Post(':postId/request-receive')
-  // async requestReceivePost(
-  //   @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
-  //   @Body() requestReceivePost: RequestReceivePostDto,
-  // ) {
-  //   return await this.postsService.requestReceive(postId, requestReceivePost);
-  // }
+  @UseGuards(FirebaseAuthGuard)
+  @Post(':postId/request-receive')
+  async requestReceivePost(
+    @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
+    @Body() requestReceivePost: RequestReceivePostDto,
+  ) {
+    try {
+      return await this.postsService.requestReceive(postId, requestReceivePost);
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
 
-  // private errorException(error: unknown) {
-  //   Logger.error(`[Post Controller]: ${error}`);
-  //   console.error(error);
-  //   throw new InternalServerErrorException();
-  // }
+  private errorException(error) {
+    Logger.error(error);
+    console.log(error);
+    throw new InternalServerErrorException();
+  }
 }

@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, PopulateOptions, Types } from 'mongoose';
+import {
+  FilterQuery,
+  Model,
+  PopulateOptions,
+  Types,
+  UpdateQuery,
+} from 'mongoose';
 
 import {
   Post,
@@ -43,13 +49,17 @@ export class PostRepository {
   }
 
   async findPost(
-    { filter, projection, queryOptions }: TOptionFilterFindMethod<Post>,
+    {
+      filter,
+      projection,
+      queryOptions,
+    }: Partial<TOptionFilterFindMethod<Post>>,
     sortDate?: ESortDate,
     populate?: PopulateOptions[],
   ) {
     if (populate) {
       return await this.postModel
-        .find<Post>(filter, projection, queryOptions)
+        .find<PostDocument>(filter, projection, queryOptions)
         .populate(populate)
         .sort({
           createdAt: sortDate ? sortDate : ESortDate.DESC,
@@ -57,7 +67,7 @@ export class PostRepository {
     }
 
     return await this.postModel
-      .find<Post>(filter, projection, queryOptions)
+      .find<PostDocument>(filter, projection, queryOptions)
       .sort({
         createdAt: sortDate ? sortDate : ESortDate.DESC,
       });
@@ -75,13 +85,40 @@ export class PostRepository {
     return post;
   }
 
-  async updatePost(postId: Types.ObjectId, postUpdate: Partial<Post>) {
+  async updatePost(
+    postId: Types.ObjectId,
+    { $set, $addToSet }: UpdateQuery<Post>,
+  ) {
     return await this.requestReceivePostModel.findOneAndUpdate<PostDocument>(
       { _id: postId },
-      postUpdate,
+      {
+        $set: $set ? $set : {},
+        $addToSet: $addToSet ? $addToSet : {},
+      },
       {
         new: true,
       },
     );
+  }
+
+  async createOffer(offerData: Omit<RequestsReceivePost, 'status'>) {
+    const offer = await this.requestReceivePostModel.create(offerData);
+
+    await offer.save();
+
+    return offer;
+  }
+
+  async findOffer<T>(
+    {
+      filter,
+      projection,
+      queryOptions,
+    }: Partial<TOptionFilterFindMethod<RequestsReceivePost>>,
+    populateOptions?: PopulateOptions[],
+  ) {
+    return await this.requestReceivePostModel
+      .find<RequestsReceivePostDocument>(filter, projection, queryOptions)
+      .populate<T>(populateOptions);
   }
 }

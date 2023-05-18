@@ -1,5 +1,4 @@
 import { Request } from 'express';
-import { DecodedIdToken } from 'firebase-admin/auth';
 import { FilterQuery, ProjectionType, QueryOptions } from 'mongoose';
 import { TUserFromFirebase } from './user.type';
 

@@ -1,18 +1,9 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, UpdateQuery } from 'mongoose';
+import { Injectable, Logger } from '@nestjs/common';
+import { Types } from 'mongoose';
 
-import { PostDocument, User, UserDocument } from 'src/database';
-import { UserDto } from 'src/dto';
-import {
-  TUserObjectMongoose,
-  TPropsUpdateUser,
-  TUserFromFirebase,
-} from 'src/types';
+import { User, UserDocument } from 'src/database';
+import { TUserFromFirebase } from 'src/types';
+
 import { UserRepository } from './user.repository';
 
 @Injectable()

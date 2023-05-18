@@ -46,22 +46,6 @@ export class UsersController {
     }
   }
 
-  @Get('profile/:id')
-  async getUserProfile(@Param('id', ParseMongooseObjectID) id: Types.ObjectId) {
-    try {
-      const user = await this.usersService.getUserById(id);
-
-      if (!user) {
-        throw new NotFoundException('User is not found !');
-      }
-
-      return plainToInstance(UserDto, user);
-    } catch (error) {
-      Logger.error(error);
-      throw new InternalServerErrorException();
-    }
-  }
-
   @UseGuards(FirebaseAuthGuard)
   @Patch('update')
   @HttpCode(204)
@@ -98,76 +82,21 @@ export class UsersController {
     }
   }
 
-  // @UseGuards(FirebaseAuthGuard)
-  // @Get('profile/list-post')
-  // async getListPost(
-  //   @Req() { user: { uid } }: { user: DecodedIdToken },
-  //   @Query() { page, limit }: PaginateDto,
-  //   @Query() { sortDate }: SortDateDto,
-  // ) {
-  //   const postsOfUser = await this.usersService.getListPostOfUser(uid);
+  @Get('profile/:id')
+  async getUserProfile(@Param('id', ParseMongooseObjectID) id: Types.ObjectId) {
+    try {
+      const user = await this.usersService.getUserById(id);
 
-  //   postsOfUser.sort((a, b) => {
-  //     if (sortDate === 'asc')
-  //       return (
-  //         new Date(a.toObject()?.createdAt).getTime() -
-  //         new Date(b.toObject()?.createdAt).getTime()
-  //       );
+      if (!user) {
+        throw new NotFoundException('User is not found !');
+      }
 
-  //     if (sortDate === 'desc') {
-  //       return (
-  //         new Date(b.toObject()?.createdAt).getTime() -
-  //         new Date(a.toObject()?.createdAt).getTime()
-  //       );
-  //     }
-  //   });
-
-  //   const totalPost = postsOfUser.length;
-  //   const totalPage =
-  //     Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
-
-  //   const startIndex = (page - 1) * limit;
-
-  //   return {
-  //     posts: postsOfUser.slice(startIndex, startIndex + limit),
-  //     totalPost,
-  //     totalPage,
-  //     page,
-  //     limit,
-  //   };
-  // }
-
-  // @UseGuards(FirebaseAuthGuard)
-  // @Get('profile/list-post-receive')
-  // async getListPostReceive(
-  //   @Req() { user: { uid } }: TRequestWithToken,
-  //   @Query() { page, limit }: PaginateDto,
-  //   @Query() { sortDate }: SortDateDto,
-  // ) {
-  //   const user = await this.usersService.getUserByUid(uid);
-
-  //   const posts = await this.postsService.getAllPost(sortDate);
-
-  //   const postUserHaveRequest = posts.filter(
-  //     (post) =>
-  //       post.userReceived?.toString() === user._id.toString() &&
-  //       post.status === EPostStatus.IS_RECEIVED,
-  //   );
-
-  //   const totalPost = postUserHaveRequest.length;
-  //   const totalPage =
-  //     Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
-
-  //   const startIndex = (page - 1) * limit;
-
-  //   return {
-  //     posts: postUserHaveRequest.slice(startIndex, startIndex + limit),
-  //     totalPost,
-  //     totalPage,
-  //     page,
-  //     limit,
-  //   };
-  // }
+      return plainToInstance(UserDto, user);
+    } catch (error) {
+      Logger.error(error);
+      throw new InternalServerErrorException();
+    }
+  }
 
   // @UseGuards(FirebaseAuthGuard)
   // @Get('profile/list-post-request')

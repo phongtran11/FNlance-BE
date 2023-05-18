@@ -1,5 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
-import { Transform } from 'class-transformer';
 import {
   IsNotEmpty,
   IsString,
@@ -9,9 +7,9 @@ import {
   IsEnum,
   IsOptional,
 } from 'class-validator';
-import { Types, isValidObjectId } from 'mongoose';
+import { Types } from 'mongoose';
 
-import { ToArrayFormat, ToDateFormat, ToMongoObjectId } from 'src/decorators';
+import { ToArrayFormat, ToDateFormat } from 'src/decorators';
 import {
   ETypeOfJob,
   ETypeOfWork,

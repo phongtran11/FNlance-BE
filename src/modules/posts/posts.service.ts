@@ -1,34 +1,18 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  forwardRef,
-} from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Types } from 'mongoose';
 
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-
-import {
-  Post,
-  RequestsReceivePost,
-  RequestsReceivePostDocument,
-  UserDocument,
-} from 'src/database';
+import { RequestsReceivePost, UserDocument } from 'src/database';
 import {
   CreatePostDto,
-  PostDto,
   PaginateDto,
   FilterPostsDto,
   ListPostDto,
   RequestReceivePostDto,
   GetListPostOfferDto,
+  SortDateDto,
 } from 'src/dto';
-import { EPostStatus, EStatusPostReceive } from 'src/enums';
-import { TUpdateUserProp } from 'src/types';
-import { populateUser } from 'src/utils';
+import { EPostStatus, ESortDate } from 'src/enums';
+import { populateRequestReceive, populateUser } from 'src/utils';
 
 import { UsersService } from '../user';
 import { PostRepository } from './posts.repository';
@@ -138,10 +122,12 @@ export class PostsService {
 
     // update request
     const postUpdated = await this.postRepository.updatePost(request._id, {
-      status: EPostStatus.IS_RECEIVED,
-      requestReceived: request ? request._id : null,
-      userReceived: request.userId,
-      dateReceived: new Date(),
+      $set: {
+        status: EPostStatus.IS_RECEIVED,
+        requestReceived: request ? request._id : null,
+        userReceived: request.userId,
+        dateReceived: new Date(),
+      },
     });
 
     // update post received in user
@@ -150,213 +136,148 @@ export class PostsService {
       postsReceive: [postId],
     });
 
-    //   // return post offer
-    //   const populateUser = await post.populate({
-    //     path: 'userId',
-    //     select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
-    //   });
+    const postPopulate = await postUpdated.populate([
+      populateUser(),
+      populateRequestReceive(),
+    ]);
 
-    //   const populatePostReceived = await populateUser.populate('requestReceived');
+    Logger.log(postPopulate, 'PostService_ReceivePost');
 
-    //   return populatePostReceived;
+    return postPopulate;
   }
 
-  // async receivePost(
-  //   postId: Types.ObjectId,
-  //   firebaseId: string,
-  //   requestId: Types.ObjectId,
-  // ) {
-  //   const user = await this.usersService.getUserByUid(firebaseId);
+  async requestReceive(
+    postId: Types.ObjectId,
+    { uid, ...res }: RequestReceivePostDto,
+  ) {
+    // Detect is user send offer with this post
 
-  //   const postsReceive = await this.getPostById(postId);
-  //   const request = await this.requestReceivePostModel.findById(requestId);
+    const user = await this.usersService.getUserByUid(uid);
 
-  //   await request.updateOne(
-  //     {
-  //       $set: {
-  //         status: EStatusPostReceive.ACCEPTED,
-  //       },
-  //     },
-  //     {
-  //       new: true,
-  //     },
-  //   );
+    const post = await this.postRepository.findPostById<{
+      listRequest: RequestsReceivePost[];
+    }>(postId, [
+      {
+        path: 'listRequest',
+      },
+    ]);
 
-  //   if (postsReceive.status === EPostStatus.IS_RECEIVED) {
-  //     throw new BadRequestException('Post was received ');
-  //   }
+    const isUserHasRequestThisPost = post.listRequest.some(
+      (request: RequestsReceivePost | Types.ObjectId) => {
+        const receiveRequest = request as RequestsReceivePost;
+        return receiveRequest.userId.toString() === user._id.toString();
+      },
+    );
 
-  //   // update post is received
-  //   const post = await this.updatePost(postsReceive.id, {
-  //     status: EPostStatus.IS_RECEIVED,
-  //     requestReceived: request ? request._id : null,
-  //     userReceived: request.userId,
-  //     dateReceived: new Date(),
-  //   });
+    if (isUserHasRequestThisPost)
+      throw new BadRequestException('You have requested offer for this post');
 
-  //   // update post received in user
-  //   await this.usersService.updateUser(user.firebaseId, {
-  //     postsReceive: [...user.postsReceive, postId],
-  //   });
+    // update postSendOffer of User
+    await this.usersService.updateUser(uid, {
+      postsSendOffer: [postId],
+    });
 
-  //   // return post offer
-  //   const populateUser = await post.populate({
-  //     path: 'userId',
-  //     select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
-  //   });
+    //  create PostSendOffer
+    const request = await this.postRepository.createOffer({
+      postId,
+      userId: user._id,
+      ...res,
+    });
 
-  //   const populatePostReceived = await populateUser.populate('requestReceived');
+    // add postSendOffer to listRequest in post
+    await this.postRepository.updatePost(postId, {
+      $addToSet: {
+        listRequest: request._id,
+      },
+    });
 
-  //   return populatePostReceived;
-  // }
+    Logger.log(request, 'PostService_RequestOffer');
 
-  // async updatePost(_id: Types.ObjectId, updateProp: TUpdateUserProp) {
-  //   try {
-  //     return await this.postModel.findOneAndUpdate(
-  //       { _id },
-  //       {
-  //         $set: updateProp,
-  //       },
-  //       {
-  //         new: true,
-  //       },
-  //     );
-  //   } catch (error) {
-  //     this.errorException(error, "Can't update post");
-  //   }
-  // }
+    return request;
+  }
 
-  // async requestReceive(
-  //   postId: Types.ObjectId,
-  //   requestReceivePost: RequestReceivePostDto,
-  // ) {
-  //   const user = await this.usersService.getUserByUid(requestReceivePost.uid);
+  async getOffersDetail({ arrayId, status }: GetListPostOfferDto) {
+    const optionsQuery = {
+      filter: {
+        _id: {
+          $in: arrayId,
+        },
+        status: status ? status : {},
+      },
+      projection: {},
+      queryOptions: {},
+    };
 
-  //   // Detect is user send offer with this post
-  //   const post = await this.postModel
-  //     .findById(postId)
-  //     .populate<{ listRequest: RequestsReceivePost[] }>('listRequest');
+    const listOffer = await this.postRepository.findOffer<{
+      userId: UserDocument;
+    }>(optionsQuery, [populateUser()]);
 
-  //   const isUserHasRequestThisPost = post.listRequest.some(
-  //     (request) => request.userId.toString() === user._id.toString(),
-  //   );
+    Logger.log(listOffer, 'PostService_ListOffer');
 
-  //   if (isUserHasRequestThisPost)
-  //     throw new BadRequestException('You have requested offer for this post');
+    return listOffer;
+  }
 
-  //   // update postSendOffer of User
-  //   await this.usersService.updateUser(requestReceivePost.uid, {
-  //     postsSendOffer: [...user.postsSendOffer, postId],
-  //   });
+  async getListUserPosted(
+    uid: string,
+    { page, limit }: PaginateDto,
+    { sortDate }: SortDateDto,
+  ) {
+    const user = await this.usersService.getUserByUid(uid);
 
-  //   //  create PostSendOffer
-  //   const request = await this.createRequestReceivePost({
-  //     postId,
-  //     ...requestReceivePost,
-  //   });
+    const postsOfUser = await this.postRepository.findPost({
+      filter: {
+        userId: user._id,
+      },
+      projection: {},
+      queryOptions: {
+        skip: (page - 1) * limit,
+        limit: limit,
+        sort: {
+          createdAt: sortDate,
+        },
+      },
+    });
 
-  //   // add postSendOffer to listRequest in post
-  //   await this.postModel.findOneAndUpdate(
-  //     { _id: postId },
-  //     {
-  //       $push: {
-  //         listRequest: request._id,
-  //       },
-  //     },
-  //     {
-  //       new: true,
-  //     },
-  //   );
+    Logger.log(postsOfUser, 'PostService_ListUserPosted');
 
-  //   return request;
-  // }
+    return postsOfUser;
+  }
 
-  // async createRequestReceivePost({
-  //   uid,
-  //   ...requestReceivePost
-  // }: RequestReceivePostDto & { postId: Types.ObjectId }) {
-  //   const user = await this.usersService.getUserByUid(uid);
+  async getListPostUserSentOffer(
+    uid: string,
+    { page, limit }: PaginateDto,
+    { sortDate }: SortDateDto,
+  ) {
+    const user = await this.usersService.getUserByUid(uid);
 
-  //   const request = new this.requestReceivePostModel({
-  //     ...requestReceivePost,
-  //     userId: user._id,
-  //   });
+    const offerOfUser = await this.postRepository.findOffer({
+      filter: {
+        userId: user.firebaseId,
+      },
+      projection: {},
+      queryOptions: {},
+    });
 
-  //   try {
-  //     await request.save();
-  //     return request;
-  //   } catch (err) {
-  //     this.errorException(err);
-  //   }
-  //   await request.save();
-  // }
+    const offersId = offerOfUser.map((offer) => offer.postId);
 
-  // async getRequestReceivePost(receivePostId: Types.ObjectId) {
-  //   return await this.requestReceivePostModel.findById(receivePostId).populate({
-  //     path: 'userId',
-  //     select: ['id', 'email', 'username', 'avatar', 'address', 'phoneNumber'],
-  //   });
-  // }
+    const postUserSentOffer = await this.postRepository.findPost({
+      filter: {
+        _id: {
+          $in: offersId,
+        },
+      },
+      projection: {},
+      queryOptions: {
+        skip: (page - 1) * limit,
+        limit: limit,
+        sort: {
+          createdAt: sortDate ? sortDate : ESortDate.DESC,
+        },
+      },
+    });
 
-  // async getListRequestReceiveDetail({ arrayId, status }: GetListPostOfferDto) {
-  //   const listQueryPromise = arrayId.map((id) => {
-  //     const filter =
-  //       status === EStatusPostReceive.ALL
-  //         ? {
-  //             _id: id,
-  //           }
-  //         : {
-  //             _id: id,
-  //             status,
-  //           };
+    Logger.log(postUserSentOffer, 'PostService_PostUserSentOffer');
 
-  //     return new Promise((resolve) => {
-  //       this.requestReceivePostModel
-  //         .findOne(filter)
-  //         .populate({
-  //           path: 'userId',
-  //           select: [
-  //             'id',
-  //             'email',
-  //             'username',
-  //             'avatar',
-  //             'address',
-  //             'phoneNumber',
-  //           ],
-  //         })
-  //         .then((data) => {
-  //           resolve(data);
-  //         });
-  //     });
-  //   });
-  //   const listPostOffer = await Promise.all(listQueryPromise);
-
-  //   return listPostOffer.filter(Boolean);
-  // }
-
-  // async getAllPostPopulateListRequest() {
-  //   return await this.postModel
-  //     .find()
-  //     .populate<{ listRequest: RequestsReceivePost[] }>('listRequest');
-  // }
-
-  // async getAllPost(sortOrder?: 'asc' | 'desc') {
-  //   if (sortOrder) {
-  //     return await this.postModel.find().sort({
-  //       createdAt: sortOrder,
-  //     });
-  //   }
-
-  //   return await this.postModel.find();
-  // }
-
-  // async getAllRequest() {
-  //   return await this.requestReceivePostModel.find<RequestsReceivePostSchema>();
-  // }
-
-  // private errorException(error: unknown, message?: string) {
-  //   console.log(new Date().toLocaleString());
-  //   console.error(error);
-  //   throw new InternalServerErrorException(message);
-  // }
+    return postUserSentOffer;
+  }
 }
