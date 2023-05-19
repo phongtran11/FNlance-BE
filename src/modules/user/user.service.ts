@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
 
-import { User, UserDocument } from 'src/database';
+import { User } from 'src/database';
 import { TUserFromFirebase } from 'src/types';
 
 import { UserRepository } from './user.repository';
@@ -47,7 +47,9 @@ export class UsersService {
     };
 
     for (const [key, value] of Object.entries(updateUserData)) {
-      if (Array.isArray(value)) {
+      if (key === 'major') {
+        updateData.$set = { ...updateData.$set, [key]: value };
+      } else if (Array.isArray(value)) {
         updateData.$addToSet = {
           ...updateData.$addToSet,
           [key]: { $each: value },
@@ -63,64 +65,4 @@ export class UsersService {
 
     return userUpdated;
   }
-
-  // async getUserById(id: Types.ObjectId): Promise<TUserObjectMongoose> {
-  //   return await this.userModel.findOne({ _id: id });
-  // }
-
-  // async updateUser(
-  //   uid: string,
-  //   propsUpdate: TPropsUpdateUser,
-  // ): Promise<TUserObjectMongoose> {
-  //   try {
-  //     return await this.userModel.findOneAndUpdate(
-  //       { firebaseId: uid },
-  //       { $set: propsUpdate },
-  //       {
-  //         new: true,
-  //       },
-  //     );
-  //   } catch (error) {
-  //     this.errorException(error, 'Cant update user');
-  //   }
-  // }
-
-  // async getListPostOfUser(uid: string) {
-  //   try {
-  //     const userPopulate = await this.userModel
-  //       .findOne({ firebaseId: uid })
-  //       .populate<{ postsId: PostDocument[] }>('postsId');
-
-  //     if (userPopulate.postsId.length === 0) {
-  //       return [];
-  //     }
-
-  //     return userPopulate.postsId;
-  //   } catch (error) {
-  //     this.errorException(error, 'Cant get list post of user');
-  //   }
-  // }
-
-  // async getListPostReceiveOfUser(firebaseId: string) {
-  //   try {
-  //     const userPopulate = await this.userModel
-  //       .findOne({ firebaseId })
-  //       .populate('postsReceive');
-
-  //     if (userPopulate.postsReceive.length === 0) {
-  //       return [];
-  //     }
-
-  //     return userPopulate.postsReceive;
-  //   } catch (error) {
-  //     this.errorException(error, 'Cant get list post, user have received');
-  //   }
-  // }
-
-  // private errorException(error, message?: string) {
-  //   console.log(new Date().toLocaleString());
-  //   console.log(error);
-
-  //   throw new InternalServerErrorException(message);
-  // }
 }

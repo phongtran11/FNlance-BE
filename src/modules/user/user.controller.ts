@@ -41,8 +41,7 @@ export class UsersController {
       const newUser = await this.usersService.createUser(user);
       return plainToInstance(UserDto, newUser);
     } catch (error) {
-      Logger.error(error, 'UserController_SignIn');
-      throw new InternalServerErrorException();
+      this.errorException(error);
     }
   }
 
@@ -56,7 +55,7 @@ export class UsersController {
     try {
       await this.usersService.updateUser(req.user.uid, updateUser);
     } catch (error) {
-      Logger.error(error);
+      this.errorException(error);
       throw new InternalServerErrorException();
     }
   }
@@ -77,8 +76,7 @@ export class UsersController {
         avatar: avatarUrl,
       });
     } catch (error) {
-      Logger.error(error);
-      throw new InternalServerErrorException();
+      this.errorException(error);
     }
   }
 
@@ -93,69 +91,13 @@ export class UsersController {
 
       return plainToInstance(UserDto, user);
     } catch (error) {
-      Logger.error(error);
-      throw new InternalServerErrorException();
+      this.errorException(error);
     }
   }
 
-  // @UseGuards(FirebaseAuthGuard)
-  // @Get('profile/list-post-request')
-  // async getListPostRequest(
-  //   @Req() { user: { uid } }: TRequestWithToken,
-  //   @Query() { page, limit }: PaginateDto,
-  //   @Query() { sortDate }: SortDateDto,
-  // ) {
-  //   const user = await this.usersService.getUserByUid(uid);
-  //   const userPopulated = await user.populate<{
-  //     postsSendOffer: PostDocument[];
-  //   }>('postsSendOffer');
-
-  //   const listRequest = await this.postsService.getAllRequest();
-
-  //   const requestOfUser = listRequest.filter(
-  //     (req) => req.userId.toString() === user._id.toString(),
-  //   );
-
-  //   const postHaveRequest = userPopulated.postsSendOffer
-  //     .sort((a: any, b: any) => {
-  //       if (sortDate === 'asc')
-  //         return (
-  //           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  //         );
-
-  //       if (sortDate === 'desc')
-  //         return (
-  //           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  //         );
-  //     })
-  //     .map((post) => {
-  //       let isReturn = false;
-  //       let myRequest;
-
-  //       requestOfUser.forEach((req) => {
-  //         if (post.id === req.postId.toString()) {
-  //           isReturn = true;
-  //           myRequest = req;
-  //         }
-  //       });
-
-  //       if (!isReturn) return null;
-  //       return { post, myRequest };
-  //     })
-  //     .filter(Boolean);
-
-  //   const totalPost = postHaveRequest.length;
-  //   const totalPage =
-  //     Math.ceil(totalPost / limit) > 1 ? Math.ceil(totalPost / limit) : 1;
-
-  //   const startIndex = (page - 1) * limit;
-
-  //   return {
-  //     posts: postHaveRequest.slice(startIndex, startIndex + limit),
-  //     totalPost,
-  //     totalPage,
-  //     page,
-  //     limit,
-  //   };
-  // }
+  private errorException(error) {
+    Logger.error(error);
+    console.log(error);
+    throw new InternalServerErrorException();
+  }
 }

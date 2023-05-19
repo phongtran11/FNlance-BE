@@ -127,5 +127,6 @@ export class GetListPostOfferDto {
   arrayId: Types.ObjectId[];
 
   @IsEnum(EStatusPostReceive)
-  status: EStatusPostReceive;
+  @IsOptional()
+  status?: EStatusPostReceive;
 }

@@ -8,14 +8,14 @@ import {
   UpdateQuery,
 } from 'mongoose';
 
+import { ESortDate } from 'src/enums';
+import { TOptionFilterFindMethod } from 'src/types';
 import {
   Post,
   PostDocument,
   RequestsReceivePost,
   RequestsReceivePostDocument,
 } from 'src/database';
-import { ESortDate } from 'src/enums';
-import { TOptionFilterFindMethod } from 'src/types';
 
 @Injectable()
 export class PostRepository {
@@ -89,8 +89,24 @@ export class PostRepository {
     postId: Types.ObjectId,
     { $set, $addToSet }: UpdateQuery<Post>,
   ) {
-    return await this.requestReceivePostModel.findOneAndUpdate<PostDocument>(
+    return await this.postModel.findOneAndUpdate<PostDocument>(
       { _id: postId },
+      {
+        $set: $set ? $set : {},
+        $addToSet: $addToSet ? $addToSet : {},
+      },
+      {
+        new: true,
+      },
+    );
+  }
+
+  async updateOffer(
+    offerId: Types.ObjectId,
+    { $set, $addToSet }: UpdateQuery<Post>,
+  ) {
+    return await this.requestReceivePostModel.findOneAndUpdate<RequestsReceivePostDocument>(
+      { _id: offerId },
       {
         $set: $set ? $set : {},
         $addToSet: $addToSet ? $addToSet : {},

@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
 
 import { RequestsReceivePost, UserDocument } from 'src/database';
+import { EPostStatus, ESortDate, EStatusPostReceive } from 'src/enums';
+import { populateRequestReceive, populateUser } from 'src/utils';
 import {
   CreatePostDto,
   PaginateDto,
@@ -11,8 +13,6 @@ import {
   GetListPostOfferDto,
   SortDateDto,
 } from 'src/dto';
-import { EPostStatus, ESortDate } from 'src/enums';
-import { populateRequestReceive, populateUser } from 'src/utils';
 
 import { UsersService } from '../user';
 import { PostRepository } from './posts.repository';
@@ -43,7 +43,7 @@ export class PostsService {
     });
 
     await this.usersService.updateUser(user.firebaseId, {
-      postsId: newPost._id,
+      postsId: [newPost._id],
     });
 
     Logger.log(newPost, 'PostService_CreatePost');
@@ -120,8 +120,8 @@ export class PostsService {
     if (postsReceive.status === EPostStatus.IS_RECEIVED)
       throw new BadRequestException('Post was receive');
 
-    // update request
-    const postUpdated = await this.postRepository.updatePost(request._id, {
+    // update post
+    const postUpdated = await this.postRepository.updatePost(postsReceive._id, {
       $set: {
         status: EPostStatus.IS_RECEIVED,
         requestReceived: request ? request._id : null,
@@ -134,6 +134,13 @@ export class PostsService {
     const user = await this.usersService.getUserByUid(firebaseId);
     await this.usersService.updateUser(user.firebaseId, {
       postsReceive: [postId],
+    });
+
+    // update offer
+    await this.postRepository.updateOffer(request._id, {
+      $set: {
+        status: EStatusPostReceive.ACCEPTED,
+      },
     });
 
     const postPopulate = await postUpdated.populate([
@@ -202,11 +209,13 @@ export class PostsService {
         _id: {
           $in: arrayId,
         },
-        status: status ? status : {},
+        status: status ? status : { $exists: true },
       },
       projection: {},
       queryOptions: {},
     };
+
+    if (status) optionsQuery.filter.status = status;
 
     const listOffer = await this.postRepository.findOffer<{
       userId: UserDocument;
@@ -249,10 +258,9 @@ export class PostsService {
     { sortDate }: SortDateDto,
   ) {
     const user = await this.usersService.getUserByUid(uid);
-
     const offerOfUser = await this.postRepository.findOffer({
       filter: {
-        userId: user.firebaseId,
+        userId: user._id,
       },
       projection: {},
       queryOptions: {},
@@ -260,12 +268,14 @@ export class PostsService {
 
     const offersId = offerOfUser.map((offer) => offer.postId);
 
-    const postUserSentOffer = await this.postRepository.findPost({
-      filter: {
-        _id: {
-          $in: offersId,
-        },
+    const filter = {
+      _id: {
+        $in: offersId,
       },
+    };
+
+    const postUserSentOffer = await this.postRepository.findPost({
+      filter,
       projection: {},
       queryOptions: {
         skip: (page - 1) * limit,
@@ -276,8 +286,108 @@ export class PostsService {
       },
     });
 
-    Logger.log(postUserSentOffer, 'PostService_PostUserSentOffer');
+    const total = await this.postRepository.countPost(filter);
 
-    return postUserSentOffer;
+    const postWithOffer = postUserSentOffer
+      .map((post) => {
+        let myRequest: Types.ObjectId;
+
+        post.listRequest.map((req) => {
+          if (
+            offerOfUser.some(
+              (userOffer) => userOffer._id.toString() === req._id.toString(),
+            )
+          )
+            myRequest = req._id;
+        });
+
+        if (myRequest)
+          return {
+            post,
+            myRequest,
+          };
+
+        return null;
+      })
+      .filter(Boolean);
+
+    Logger.log(postWithOffer, 'PostService_PostUserSentOffer');
+
+    return { data: postWithOffer, total, page, limit };
+  }
+
+  async getListPostUserReceived(
+    uid: string,
+    { page, limit }: PaginateDto,
+    { sortDate }: SortDateDto,
+  ) {
+    const user = await this.usersService.getUserByUid(uid);
+    const offerOfUser = await this.postRepository.findOffer({
+      filter: {
+        userId: user._id,
+        status: EStatusPostReceive.ACCEPTED,
+      },
+      projection: {},
+      queryOptions: {},
+    });
+
+    const offersId = offerOfUser.map((offer) => offer.postId);
+
+    const filter = {
+      _id: {
+        $in: offersId,
+      },
+      status: EPostStatus.IS_RECEIVED,
+    };
+
+    const postUserSentOffer = await this.postRepository.findPost({
+      filter,
+      projection: {},
+      queryOptions: {
+        skip: (page - 1) * limit,
+        limit: limit,
+        sort: {
+          createdAt: sortDate ? sortDate : ESortDate.DESC,
+        },
+      },
+    });
+
+    const total = await this.postRepository.countPost(filter);
+
+    const postWithOffer = postUserSentOffer
+      .map((post) => {
+        let myRequest: Types.ObjectId;
+        let isReceived = false;
+
+        post.listRequest.map((req) => {
+          if (
+            offerOfUser.some(
+              (userOffer) => userOffer._id.toString() === req._id.toString(),
+            )
+          )
+            myRequest = req._id;
+        });
+
+        if (post.userReceived.toString() === user._id.toString())
+          isReceived = true;
+
+        if (isReceived && myRequest)
+          return {
+            post,
+            myRequest,
+          };
+
+        return null;
+      })
+      .filter(Boolean);
+
+    Logger.log(postWithOffer, 'PostService_PostUserSentOffer');
+
+    return {
+      data: postWithOffer,
+      total,
+      page,
+      limit,
+    };
   }
 }

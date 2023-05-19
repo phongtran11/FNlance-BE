@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   InternalServerErrorException,
   Logger,
   Param,
@@ -14,6 +15,7 @@ import { Types } from 'mongoose';
 
 import { DecodedIdToken } from 'firebase-admin/auth';
 
+import { ParseMongooseObjectID, ParseMongooseObjectIDToArray } from 'src/pipe';
 import {
   PaginateDto,
   FilterPostsDto,
@@ -22,7 +24,6 @@ import {
   GetListPostOfferDto,
   SortDateDto,
 } from 'src/dto';
-import { ParseMongooseObjectID, ParseMongooseObjectIDToArray } from 'src/pipe';
 
 import { FirebaseAuthGuard } from '../auth';
 
@@ -92,6 +93,24 @@ export class PostsController {
   }
 
   @UseGuards(FirebaseAuthGuard)
+  @Get('list/posts-user-have-receive')
+  async getListUserReceived(
+    @Req() { user: { uid } }: TRequestWithToken,
+    @Query() paginateDto: PaginateDto,
+    @Query() sortDateDto: SortDateDto,
+  ) {
+    try {
+      return await this.postsService.getListPostUserReceived(
+        uid,
+        paginateDto,
+        sortDateDto,
+      );
+    } catch (error) {
+      this.errorException(error);
+    }
+  }
+
+  @UseGuards(FirebaseAuthGuard)
   @Get('offer-detail')
   async getRequestReceiveDetail(
     @Query(ParseMongooseObjectIDToArray)
@@ -116,7 +135,7 @@ export class PostsController {
   }
 
   @UseGuards(FirebaseAuthGuard)
-  @Post(':postId/receive')
+  @Post(':postId/receive-offer')
   async receivePost(
     @Req() { user }: { user: DecodedIdToken },
     @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
@@ -130,13 +149,14 @@ export class PostsController {
   }
 
   @UseGuards(FirebaseAuthGuard)
-  @Post(':postId/request-receive')
+  @Post(':postId/send-offer')
+  @HttpCode(204)
   async requestReceivePost(
     @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
     @Body() requestReceivePost: RequestReceivePostDto,
   ) {
     try {
-      return await this.postsService.requestReceive(postId, requestReceivePost);
+      await this.postsService.requestReceive(postId, requestReceivePost);
     } catch (error) {
       this.errorException(error);
     }
