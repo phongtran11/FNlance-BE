@@ -247,9 +247,31 @@ export class PostsService {
       },
     });
 
-    Logger.log(postsOfUser, 'PostService_ListUserPosted');
+    const total = await this.postRepository.countPost({
+      userId: user.id,
+    });
 
-    return postsOfUser;
+    const totalPage =
+      Math.ceil(total / limit) > 1 ? Math.ceil(total / limit) : 1;
+
+    Logger.log(
+      {
+        data: postsOfUser,
+        total,
+        totalPage,
+        page,
+        limit,
+      },
+      'PostService_ListUserPosted',
+    );
+
+    return {
+      data: postsOfUser,
+      total,
+      totalPage,
+      page,
+      limit,
+    };
   }
 
   async getListPostUserSentOffer(
@@ -311,9 +333,15 @@ export class PostsService {
       })
       .filter(Boolean);
 
-    Logger.log(postWithOffer, 'PostService_PostUserSentOffer');
+    const totalPage =
+      Math.ceil(total / limit) > 1 ? Math.ceil(total / limit) : 1;
 
-    return { data: postWithOffer, total, page, limit };
+    Logger.log(
+      { data: postWithOffer, totalPage, total, page, limit },
+      'PostService_PostUserSentOffer',
+    );
+
+    return { data: postWithOffer, totalPage, total, page, limit };
   }
 
   async getListPostUserReceived(
@@ -381,11 +409,24 @@ export class PostsService {
       })
       .filter(Boolean);
 
-    Logger.log(postWithOffer, 'PostService_PostUserSentOffer');
+    const totalPage =
+      Math.ceil(total / limit) > 1 ? Math.ceil(total / limit) : 1;
+
+    Logger.log(
+      {
+        data: postWithOffer,
+        total,
+        totalPage,
+        page,
+        limit,
+      },
+      'PostService_PostUserSentOffer',
+    );
 
     return {
       data: postWithOffer,
       total,
+      totalPage,
       page,
       limit,
     };
