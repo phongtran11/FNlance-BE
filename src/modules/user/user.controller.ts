@@ -47,13 +47,13 @@ export class UsersController {
 
   @UseGuards(FirebaseAuthGuard)
   @Patch('update')
-  @HttpCode(204)
+  @HttpCode(201)
   async updateUser(
     @Req() req: TRequestWithToken,
     @Body() updateUser: UpdateUserDto,
   ) {
     try {
-      await this.usersService.updateUser(req.user.uid, updateUser);
+      return await this.usersService.updateUser(req.user.uid, updateUser);
     } catch (error) {
       this.errorException(error);
       throw new InternalServerErrorException();
@@ -62,7 +62,7 @@ export class UsersController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post('upload')
-  @HttpCode(204)
+  @HttpCode(201)
   @UseInterceptors(FileInterceptor('avatar', storageUploadHandle))
   async uploadFile(
     @UploadedFile(FileSizeValidationPipe) file: Express.Multer.File,
@@ -72,7 +72,7 @@ export class UsersController {
       const avatarUrl: string =
         configuration().baseUrl + file.path.replace('public/', '');
 
-      await this.usersService.updateUser(user.uid, {
+      return await this.usersService.updateUser(user.uid, {
         avatar: avatarUrl,
       });
     } catch (error) {

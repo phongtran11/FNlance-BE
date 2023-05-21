@@ -150,13 +150,13 @@ export class PostsController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post(':postId/send-offer')
-  @HttpCode(204)
+  @HttpCode(201)
   async requestReceivePost(
     @Param('postId', ParseMongooseObjectID) postId: Types.ObjectId,
     @Body() requestReceivePost: RequestReceivePostDto,
   ) {
     try {
-      await this.postsService.requestReceive(postId, requestReceivePost);
+      return await this.postsService.requestReceive(postId, requestReceivePost);
     } catch (error) {
       this.errorException(error);
     }
