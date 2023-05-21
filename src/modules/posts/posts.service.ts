@@ -235,7 +235,7 @@ export class PostsService {
 
     const postsOfUser = await this.postRepository.findPost({
       filter: {
-        userId: user._id,
+        userId: user.id,
       },
       projection: {},
       queryOptions: {
