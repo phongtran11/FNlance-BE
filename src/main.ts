@@ -10,7 +10,11 @@ import { configuration } from './config';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.enableCors();
+  app.enableCors({
+    origin: ['freelancer.net.vn']
+  });
+
+  app.set('hostname','freelancer.net.vn');
 
   app.useGlobalPipes(
     new ValidationPipe({
