@@ -1,6 +1,10 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {Inject, Injectable, InternalServerErrorException, UnauthorizedException} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {join} from 'path'
+
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from "@aws-sdk/client-secrets-manager";
 
 import firebaseAdmin from 'firebase-admin';
 import { DecodedIdToken, UserRecord } from 'firebase-admin/lib/auth';
@@ -11,19 +15,44 @@ import { AuthErrorConstants } from '../auth';
 
 @Injectable()
 export class FirebaseService {
-  private readonly admin: firebaseAdmin.app.App;
+  private  admin: firebaseAdmin.app.App;
   constructor(
     @Inject(ConfigService)
     private configService: TConfigService,
   ) {
-    this.admin = firebaseAdmin.initializeApp({
-      credential: firebaseAdmin.credential.cert(join(__dirname, '..', '..', '..', this.configService.get('firebaseCert'))),
-      databaseURL: this.configService.get('firebaseDatabaseURL'),
-    });
+    this.getFirebaseSecret((secret) => {
+      this.admin = firebaseAdmin.initializeApp({
+        credential: firebaseAdmin.credential.cert(secret),
+        databaseURL: this.configService.get('firebaseDatabaseURL'),
 
-    this.admin.firestore();
+      } );
+      this.admin.firestore();
+    });
   }
 
+  private async getFirebaseSecret (callback: (secret: string) => void){
+    const client = new SecretsManagerClient({
+      region: "ap-southeast-2",
+      credentials: {
+        secretAccessKey:  this.configService.get('awsSecretAccessKey'),
+        accessKeyId: this.configService.get('awsAccessKeyId')
+      }
+    });
+
+    try {
+      const response =  await client.send(
+        new GetSecretValueCommand({
+          SecretId: "fnlance/be",
+          VersionStage: "AWSCURRENT",
+        })
+      )
+      callback(JSON.parse(response.SecretString))
+    } catch (error) {
+      console.log(error)
+      throw new InternalServerErrorException()
+    }
+
+  }
 
   public async verifyToken(token: string): Promise<DecodedIdToken> {
     try {

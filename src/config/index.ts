@@ -9,8 +9,9 @@ export type TConfiguration = {
   port: number;
   baseUrl: string;
   mongoURI: string;
-  firebaseCert: string
   firebaseDatabaseURL: string
+  awsAccessKeyId: string
+  awsSecretAccessKey: string
 };
 
 export type TConfigService = ConfigService<TConfiguration>;
@@ -19,6 +20,7 @@ export const configuration = (): TConfiguration => ({
   port: +process.env.PORT,
   baseUrl: process.env.BASE_URL,
   mongoURI: process.env.MONGO_URI,
-  firebaseCert: process.env.FIREBASE_CERT,
   firebaseDatabaseURL: process.env.FIREBASE_DATABASE_URL,
+  awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
